@@ -1,0 +1,38 @@
+{
+  "id": 0,
+  "face": 0,
+  "moduleType": "T",
+  "value": 0.43,
+  "children": [
+    {
+      "id": 15,
+      "face": 2,
+      "moduleType": "R",
+      "value": 0.5700000000000001,
+      "children": [
+        {
+          "id": 25,
+          "face": 1,
+          "moduleType": "R",
+          "value": 0.16,
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "face": 3,
+      "moduleType": "R",
+      "value": 0.63,
+      "children": [
+        {
+          "id": 26,
+          "face": 1,
+          "moduleType": "R",
+          "value": 0.28,
+          "children": []
+        }
+      ]
+    }
+  ]
+}
