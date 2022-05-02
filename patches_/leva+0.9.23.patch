@@ -1,0 +1,301 @@
+diff --git a/node_modules/leva/dist/leva.cjs.dev.js b/node_modules/leva/dist/leva.cjs.dev.js
+index c561139..050f2ca 100644
+--- a/node_modules/leva/dist/leva.cjs.dev.js
++++ b/node_modules/leva/dist/leva.cjs.dev.js
+@@ -691,16 +691,16 @@ const sanitize$1 = v => {
+ 
+   if (v instanceof File) {
+     try {
+-      return URL.createObjectURL(v);
++      return v;
+     } catch (e) {
+       return undefined;
+     }
+   }
+ 
+-  if (typeof v === 'string' && v.indexOf('blob:') === 0) return v;
+-  throw Error(`Invalid image format [undefined | blob | File].`);
++  if (typeof v === 'string') return v;
++  throw Error(`Invalid image format [undefined | string | File].`);
+ };
+-const schema$1 = (_o, s) => typeof s === 'object' && 'image' in s;
++const schema$1 = (_o, s) => s instanceof File || typeof s === "string";
+ const normalize$1 = ({
+   image
+ }) => {
+@@ -719,7 +719,7 @@ var props$1 = /*#__PURE__*/Object.freeze({
+ const ImageContainer = vectorPlugin.styled('div', {
+   position: 'relative',
+   display: 'grid',
+-  gridTemplateColumns: '$sizes$rowHeight auto 20px',
++  gridTemplateColumns: 'auto auto',
+   columnGap: '$colGap',
+   alignItems: 'center'
+ });
+@@ -839,31 +839,12 @@ function ImageComponent() {
+     isDragAccept
+   } = reactDropzone.useDropzone({
+     maxFiles: 1,
+-    accept: 'image/*',
+     onDrop,
+     disabled
+   });
+   return React__default['default'].createElement(vectorPlugin.Row, {
+     input: true
+-  }, React__default['default'].createElement(vectorPlugin.Label, null, label), React__default['default'].createElement(ImageContainer, null, React__default['default'].createElement(ImagePreview, {
+-    ref: popinRef,
+-    hasImage: !!value,
+-    onPointerDown: () => !!value && show(),
+-    onPointerUp: hide,
+-    style: {
+-      backgroundImage: value ? `url(${value})` : 'none'
+-    }
+-  }), shown && !!value && React__default['default'].createElement(vectorPlugin.Portal, null, React__default['default'].createElement(vectorPlugin.Overlay, {
+-    onPointerUp: hide,
+-    style: {
+-      cursor: 'pointer'
+-    }
+-  }), React__default['default'].createElement(ImageLargePreview, {
+-    ref: wrapperRef,
+-    style: {
+-      backgroundImage: `url(${value})`
+-    }
+-  })), React__default['default'].createElement(DropZone, getRootProps({
++  }, React__default['default'].createElement(vectorPlugin.Label, null, label), React__default['default'].createElement(ImageContainer, null, React__default['default'].createElement(DropZone, getRootProps({
+     isDragAccept
+   }), React__default['default'].createElement("input", getInputProps()), React__default['default'].createElement(Instructions, null, isDragAccept ? 'drop image' : 'click or drop')), React__default['default'].createElement(Remove, {
+     onClick: clear,
+diff --git a/node_modules/leva/dist/leva.cjs.prod.js b/node_modules/leva/dist/leva.cjs.prod.js
+index d4a0677..541ca41 100644
+--- a/node_modules/leva/dist/leva.cjs.prod.js
++++ b/node_modules/leva/dist/leva.cjs.prod.js
+@@ -691,16 +691,16 @@ const sanitize$1 = v => {
+ 
+   if (v instanceof File) {
+     try {
+-      return URL.createObjectURL(v);
++      return v;
+     } catch (e) {
+       return undefined;
+     }
+   }
+ 
+-  if (typeof v === 'string' && v.indexOf('blob:') === 0) return v;
+-  throw Error(`Invalid image format [undefined | blob | File].`);
++  if (typeof v === 'string') return v;
++  throw Error(`Invalid image format [undefined | string | File].`);
+ };
+-const schema$1 = (_o, s) => typeof s === 'object' && 'image' in s;
++const schema$1 = (_o, s) => s instanceof File || typeof s === "string";
+ const normalize$1 = ({
+   image
+ }) => {
+@@ -719,7 +719,7 @@ var props$1 = /*#__PURE__*/Object.freeze({
+ const ImageContainer = vectorPlugin.styled('div', {
+   position: 'relative',
+   display: 'grid',
+-  gridTemplateColumns: '$sizes$rowHeight auto 20px',
++  gridTemplateColumns: 'auto auto',
+   columnGap: '$colGap',
+   alignItems: 'center'
+ });
+@@ -839,31 +839,12 @@ function ImageComponent() {
+     isDragAccept
+   } = reactDropzone.useDropzone({
+     maxFiles: 1,
+-    accept: 'image/*',
+     onDrop,
+     disabled
+   });
+   return React__default['default'].createElement(vectorPlugin.Row, {
+     input: true
+-  }, React__default['default'].createElement(vectorPlugin.Label, null, label), React__default['default'].createElement(ImageContainer, null, React__default['default'].createElement(ImagePreview, {
+-    ref: popinRef,
+-    hasImage: !!value,
+-    onPointerDown: () => !!value && show(),
+-    onPointerUp: hide,
+-    style: {
+-      backgroundImage: value ? `url(${value})` : 'none'
+-    }
+-  }), shown && !!value && React__default['default'].createElement(vectorPlugin.Portal, null, React__default['default'].createElement(vectorPlugin.Overlay, {
+-    onPointerUp: hide,
+-    style: {
+-      cursor: 'pointer'
+-    }
+-  }), React__default['default'].createElement(ImageLargePreview, {
+-    ref: wrapperRef,
+-    style: {
+-      backgroundImage: `url(${value})`
+-    }
+-  })), React__default['default'].createElement(DropZone, getRootProps({
++  }, React__default['default'].createElement(vectorPlugin.Label, null, label), React__default['default'].createElement(ImageContainer, null, React__default['default'].createElement(DropZone, getRootProps({
+     isDragAccept
+   }), React__default['default'].createElement("input", getInputProps()), React__default['default'].createElement(Instructions, null, isDragAccept ? 'drop image' : 'click or drop')), React__default['default'].createElement(Remove, {
+     onClick: clear,
+diff --git a/node_modules/leva/dist/leva.esm.js b/node_modules/leva/dist/leva.esm.js
+index a480309..274f66b 100644
+--- a/node_modules/leva/dist/leva.esm.js
++++ b/node_modules/leva/dist/leva.esm.js
+@@ -678,16 +678,16 @@ const sanitize$1 = v => {
+ 
+   if (v instanceof File) {
+     try {
+-      return URL.createObjectURL(v);
++      return v;
+     } catch (e) {
+       return undefined;
+     }
+   }
+ 
+-  if (typeof v === 'string' && v.indexOf('blob:') === 0) return v;
+-  throw Error(`Invalid image format [undefined | blob | File].`);
++  if (typeof v === 'string') return v;
++  throw Error(`Invalid image format [undefined | string | File].`);
+ };
+-const schema$1 = (_o, s) => typeof s === 'object' && 'image' in s;
++const schema$1 = (_o, s) => s instanceof File || typeof s === "string";
+ const normalize$1 = ({
+   image
+ }) => {
+@@ -706,7 +706,7 @@ var props$1 = /*#__PURE__*/Object.freeze({
+ const ImageContainer = styled('div', {
+   position: 'relative',
+   display: 'grid',
+-  gridTemplateColumns: '$sizes$rowHeight auto 20px',
++  gridTemplateColumns: 'auto auto',
+   columnGap: '$colGap',
+   alignItems: 'center'
+ });
+@@ -826,31 +826,12 @@ function ImageComponent() {
+     isDragAccept
+   } = useDropzone({
+     maxFiles: 1,
+-    accept: 'image/*',
+     onDrop,
+     disabled
+   });
+   return React.createElement(Row, {
+     input: true
+-  }, React.createElement(Label, null, label), React.createElement(ImageContainer, null, React.createElement(ImagePreview, {
+-    ref: popinRef,
+-    hasImage: !!value,
+-    onPointerDown: () => !!value && show(),
+-    onPointerUp: hide,
+-    style: {
+-      backgroundImage: value ? `url(${value})` : 'none'
+-    }
+-  }), shown && !!value && React.createElement(Portal, null, React.createElement(Overlay, {
+-    onPointerUp: hide,
+-    style: {
+-      cursor: 'pointer'
+-    }
+-  }), React.createElement(ImageLargePreview, {
+-    ref: wrapperRef,
+-    style: {
+-      backgroundImage: `url(${value})`
+-    }
+-  })), React.createElement(DropZone, getRootProps({
++  }, React.createElement(Label, null, label), React.createElement(ImageContainer, null, React.createElement(DropZone, getRootProps({
+     isDragAccept
+   }), React.createElement("input", getInputProps()), React.createElement(Instructions, null, isDragAccept ? 'drop image' : 'click or drop')), React.createElement(Remove, {
+     onClick: clear,
+diff --git a/node_modules/leva/src/components/Image/Image.tsx b/node_modules/leva/src/components/Image/Image.tsx
+index 9f5ea01..44fc03b 100644
+--- a/node_modules/leva/src/components/Image/Image.tsx
++++ b/node_modules/leva/src/components/Image/Image.tsx
+@@ -8,7 +8,6 @@ import type { ImageProps } from './image-types'
+ 
+ export function ImageComponent() {
+   const { label, value, onUpdate, disabled } = useInputContext<ImageProps>()
+-  const { popinRef, wrapperRef, shown, show, hide } = usePopin()
+ 
+   const onDrop = useCallback(
+     (acceptedFiles) => {
+@@ -27,29 +26,19 @@ export function ImageComponent() {
+ 
+   const { getRootProps, getInputProps, isDragAccept } = useDropzone({
+     maxFiles: 1,
+-    accept: 'image/*',
+     onDrop,
+     disabled,
+-  })
++    multiple: false,
++    onDragEnter: undefined,
++    onDragOver: undefined,
++    onDragLeave: undefined
++})
+ 
+   // TODO fix any in DropZone
+   return (
+     <Row input>
+       <Label>{label}</Label>
+       <ImageContainer>
+-        <ImagePreview
+-          ref={popinRef}
+-          hasImage={!!value}
+-          onPointerDown={() => !!value && show()}
+-          onPointerUp={hide}
+-          style={{ backgroundImage: value ? `url(${value})` : 'none' }}
+-        />
+-        {shown && !!value && (
+-          <Portal>
+-            <Overlay onPointerUp={hide} style={{ cursor: 'pointer' }} />
+-            <ImageLargePreview ref={wrapperRef} style={{ backgroundImage: `url(${value})` }} />
+-          </Portal>
+-        )}
+         <DropZone {...(getRootProps({ isDragAccept }) as any)}>
+           <input {...getInputProps()} />
+           <Instructions>{isDragAccept ? 'drop image' : 'click or drop'}</Instructions>
+diff --git a/node_modules/leva/src/components/Image/image-plugin.ts b/node_modules/leva/src/components/Image/image-plugin.ts
+index 887fecd..29a252e 100644
+--- a/node_modules/leva/src/components/Image/image-plugin.ts
++++ b/node_modules/leva/src/components/Image/image-plugin.ts
+@@ -1,19 +1,21 @@
+ import type { ImageInput } from '../../types'
+ 
+-export const sanitize = (v: any): string | undefined => {
++export const sanitize = (v: any): File | string | undefined => {
+   if (v === undefined) return undefined
+   if (v instanceof File) {
+     try {
+-      return URL.createObjectURL(v)
++      return v
+     } catch (e) {
+       return undefined
+     }
+   }
+-  if (typeof v === 'string' && v.indexOf('blob:') === 0) return v
+-  throw Error(`Invalid image format [undefined | blob | File].`)
++  if(typeof v === "string") {
++    return v;
++  }
++  throw Error(`Invalid image format [undefined | string | File].`)
+ }
+ 
+-export const schema = (_o: any, s: any) => typeof s === 'object' && 'image' in s
++export const schema = (_o: any, s: any) => s instanceof File || typeof s === "string";
+ 
+ export const normalize = ({ image }: ImageInput) => {
+   return { value: image }
+diff --git a/node_modules/leva/src/components/Image/image-types.ts b/node_modules/leva/src/components/Image/image-types.ts
+index c9f3b96..a3ef8f2 100644
+--- a/node_modules/leva/src/components/Image/image-types.ts
++++ b/node_modules/leva/src/components/Image/image-types.ts
+@@ -1,3 +1,3 @@
+ import type { LevaInputProps } from '../../types'
+ 
+-export type ImageProps = LevaInputProps<string | undefined>
++export type ImageProps = LevaInputProps<File | string | undefined>
+diff --git a/node_modules/leva/src/types/public.ts b/node_modules/leva/src/types/public.ts
+index d2608b9..5d99cd5 100644
+--- a/node_modules/leva/src/types/public.ts
++++ b/node_modules/leva/src/types/public.ts
+@@ -96,7 +96,7 @@ export type Vector3dInput = MergedInputWithSettings<Vector3d, Vector3dSettings>
+ 
+ export type IntervalInput = { value: [number, number]; min: number; max: number }
+ 
+-export type ImageInput = { image: undefined | string }
++export type ImageInput = { image: undefined | string | File }
+ 
+ type SelectInput = { options: any[] | Record<string, any>; value?: any }
+ 

@@ -1,0 +1,68 @@
+diff --git a/node_modules/leva/dist/leva.esm.js b/node_modules/leva/dist/leva.esm.js
+index a480309..274f66b 100644
+--- a/node_modules/leva/dist/leva.esm.js
++++ b/node_modules/leva/dist/leva.esm.js
+@@ -678,16 +678,16 @@ const sanitize$1 = v => {
+ 
+   if (v instanceof File) {
+     try {
+-      return URL.createObjectURL(v);
++      return v;
+     } catch (e) {
+       return undefined;
+     }
+   }
+ 
+-  if (typeof v === 'string' && v.indexOf('blob:') === 0) return v;
+-  throw Error(`Invalid image format [undefined | blob | File].`);
++  if (typeof v === 'string') return v;
++  throw Error(`Invalid image format [undefined | string | File].`);
+ };
+-const schema$1 = (_o, s) => typeof s === 'object' && 'image' in s;
++const schema$1 = (_o, s) => s instanceof File || typeof s === "string";
+ const normalize$1 = ({
+   image
+ }) => {
+@@ -706,7 +706,7 @@ var props$1 = /*#__PURE__*/Object.freeze({
+ const ImageContainer = styled('div', {
+   position: 'relative',
+   display: 'grid',
+-  gridTemplateColumns: '$sizes$rowHeight auto 20px',
++  gridTemplateColumns: 'auto auto',
+   columnGap: '$colGap',
+   alignItems: 'center'
+ });
+@@ -826,31 +826,13 @@ function ImageComponent() {
+     isDragAccept
+   } = useDropzone({
+     maxFiles: 1,
+-    accept: 'image/*',
++    accept: '.json',
+     onDrop,
+     disabled
+   });
+   return React.createElement(Row, {
+     input: true
+-  }, React.createElement(Label, null, label), React.createElement(ImageContainer, null, React.createElement(ImagePreview, {
+-    ref: popinRef,
+-    hasImage: !!value,
+-    onPointerDown: () => !!value && show(),
+-    onPointerUp: hide,
+-    style: {
+-      backgroundImage: value ? `url(${value})` : 'none'
+-    }
+-  }), shown && !!value && React.createElement(Portal, null, React.createElement(Overlay, {
+-    onPointerUp: hide,
+-    style: {
+-      cursor: 'pointer'
+-    }
+-  }), React.createElement(ImageLargePreview, {
+-    ref: wrapperRef,
+-    style: {
+-      backgroundImage: `url(${value})`
+-    }
+-  })), React.createElement(DropZone, getRootProps({
++  }, React.createElement(Label, null, label), React.createElement(ImageContainer, null, React.createElement(DropZone, getRootProps({
+     isDragAccept
+   }), React.createElement("input", getInputProps()), React.createElement(Instructions, null, isDragAccept ? 'drop image' : 'click or drop')), React.createElement(Remove, {
+     onClick: clear,

@@ -1,0 +1,22 @@
+diff --git a/node_modules/leva/dist/leva.esm.js b/node_modules/leva/dist/leva.esm.js
+index a480309..274f66b 100644
+--- a/node_modules/leva/dist/leva.esm.js
++++ b/node_modules/leva/dist/leva.esm.js
+@@ -678,7 +678,7 @@ const sanitize$1 = v => {
+   if (v instanceof File) {
+     try {
+-      return URL.createObjectURL(v);
++      return v;
+     } catch (e) {
+       return undefined;
+     }
+   }
+@@ -826,7 +826,7 @@ function ImageComponent() {
+     isDragAccept
+   } = useDropzone({
+     maxFiles: 1,
+-    accept: 'image/*',
++    accept: 'application/json',
+     onDrop,
+     disabled
+   });
