@@ -1,13 +1,13 @@
-import { useState, useEffect, useLayoutEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { Canvas } from "@react-three/fiber";
 import { softShadows, OrbitControls } from "@react-three/drei";
 
-import { useLocalStorage, getStorageValue, setStorageValue } from "./LocalStorage";
+import { useLocalStorage } from "./Storage";
 import { download } from "./utils";
 
 import { ModuleTree } from "./Modules";
 
-import { LevaPanel, LevaStoreProvider, useControls, useCreateStore, folder, button } from "leva";
+import { LevaPanel, LevaStoreProvider, useControls, useCreateStore, useStoreContext, folder, button } from "leva";
 
 import "./App.css";
 
@@ -43,6 +43,8 @@ const traverse = (scene) => {
     }
 
     let treeData = JSON.stringify(roots[0], null, 2);
+
+    return treeData;
 };
 
 const exampleTree = {
@@ -82,14 +84,18 @@ const exampleColor = {
     background: '#111111',
     axis: '#151515',
     grid: '#060606',
-    start: '#85AA85',
-    end: '#384938',
-    T_Highlight: '#282cce',
-    R_Highlight: '#e5851b',
+    T_start: '#85AA85',
+    T_end: '#384938',
+    T_highlight: '#282cce',
+    R_start: '#85AA85',
+    R_end: '#384938',
+    R_highlight: '#e5851b',
 };
 
 
 const getTreeFolder = (tree, treeName) => {
+    console.log(tree);
+
     let childTreeFolder = tree.children.map(n => ({
         ['Module_' + n.id]: getTreeFolder(n, treeName + '_' + n.id),
     }));
@@ -173,29 +179,63 @@ const resetModules = (store) => {
     store.disposePaths(toRemove);
 };
 
+const Scene = ({ tree, ...props }) => {
+    const store = useStoreContext();
+    
+    const background = store.get('background');
+    const axis = store.get('axix');
+    const grid = store.get('grid');
+
+    return (
+        <Canvas
+            camera={{ position: [-5, 2, 10], fov: 60 }}
+            onCreated={(state) => traverse(state.scene)}
+        >
+            <LevaStoreProvider store={store}>
+                <color attach="background" args={[background]} />
+
+                <ambientLight intensity={0.3} />
+                <pointLight position={[0, 20, 0]} intensity={1.5} />
+
+                <group>
+                    <group position={[0, 0, 0]}>
+                        <ModuleTree root={tree}/>
+                    </group>
+                    <gridHelper args={[100, 20, axis, grid]} position={[0, 0, 0]} />
+                </group>
+                <OrbitControls />
+            </LevaStoreProvider>
+        </Canvas>
+    );
+};
+
 const App = () => {
     const [, updateState] = useState();
     const forceUpdate = useCallback(() => updateState({}), []);
 
+    console.log('render app');
     const [treeData, setTreeData] = useLocalStorage("treeData", exampleTree);
     const [colorData, setColorData] = useLocalStorage("colorData", exampleColor);
+
     const store = useCreateStore();
 
-    const [ treeValues, setTreeValues] = useControls(() => ({
+    const [ treeValues, ] = useControls(() => ({
         ['Module_' + treeData.id]: getTreeFolder(treeData, treeData.id)
-    }), {store }, [treeData]);
+    }), { store }, [treeData]);
 
-    const [ colors, setColorValues] = useControls(() => ({
+    const [ colors, ] = useControls(() => ({
         background: colorData.background,
         axis: colorData.axis,
         grid: colorData.grid,
-        start: colorData.start,
-        end: colorData.end,
-        T_Highlight: colorData.T_Highlight,
-        R_Highlight: colorData.R_Highlight,
-    }), {store }, [colorData]);
+        T_start: colorData.T_start,
+        T_end: colorData.T_end,
+        T_highlight: colorData.T_highlight,
+        R_start: colorData.R_start,
+        R_end: colorData.R_end,
+        R_highlight: colorData.R_highlight,
+    }), { store }, [colorData]);
 
-    const [{ userLoadedtreeJSON }, setControls] = useControls(() => ({
+    const [{ userLoadedtreeJSON }, ] = useControls(() => ({
         userLoadedtreeJSON: {
             label: 'Load JSON',
             image: undefined
@@ -203,15 +243,7 @@ const App = () => {
         'Export JSON': button((get) => {
             const exportData = {
                 tree: treeData,
-                color: {
-                    background: get('background'),
-                    axis: get('axis'),
-                    grid: get('grid'),
-                    start: get('start'),
-                    end: get('end'),
-                    T_Highlight: get('T_Highlight'),
-                    R_Highlight: get('R_Highlight'),
-                }          
+                color: colors
             };
 
             download(JSON.stringify(exportData, null, 2), 'export.json', 'application/json');
@@ -227,49 +259,39 @@ const App = () => {
                 // const newTreeValues = flattenTreeData(result.tree);
 
                 // resetModules(store);
-                setTreeData(result.tree);
+                if (result.tree) {
+                    setTreeData(result.tree);
+                }
+                if (result.color) {
+                    setColorData(result.color);
+                }
+                console.log('update_before');
                 // setTreeValues(newTreeValues);
-                // forceUpdate();
-                window.location.reload(false);
+                forceUpdate();
+                console.log('update_after');
+                // window.location.reload(false);
             }
 
             reader.readAsText(userLoadedtreeJSON);
         }
-    }, [userLoadedtreeJSON, setTreeData]);
+    }, [userLoadedtreeJSON, setTreeData, setColorData, forceUpdate]);
 
-    const parsedTree = useMemo(() => {
-        const latestData = parseFromTreeValues(treeValues);
-        setStorageValue("treeData", latestData);
-        return latestData;
-    }, [treeValues]);
+    const parsedTree = useMemo(() => parseFromTreeValues(treeValues), [treeValues]);
 
     useEffect(() => {
-        setStorageValue("colorData", colors);
-    }, [colors]);
+        setTreeData(parsedTree);
+    }, [setTreeData, parsedTree]);
+
+    useEffect(() => {
+        setColorData(colors);
+    }, [setColorData, colors]);
 
     return (
         <>
         <LevaPanel store={store} />
-            <Canvas
-                camera={{ position: [-5, 2, 10], fov: 60 }}
-                onCreated={(state) => traverse(state.scene)}>
-                <color attach="background" args={[colors.background]} />
-
-                <ambientLight intensity={0.3} />
-                <pointLight position={[0, 20, 0]} intensity={1.5} />
-
-                <group>
-                    <group position={[0, 0, 0]}>
-                        <LevaStoreProvider store={store}>
-                            <ModuleTree root={parsedTree}/>
-                        </LevaStoreProvider>
-                    </group>
-
-                    <gridHelper args={[100, 20, colors.axis, colors.grid]} position={[0, 0, 0]} />
-                </group>
-
-                <OrbitControls />
-            </Canvas>
+        <LevaStoreProvider store={store}>
+            <Scene tree={parsedTree} />
+        </LevaStoreProvider>
         </>
     );
 };

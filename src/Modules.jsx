@@ -1,6 +1,7 @@
 import React, { useRef, useState, useMemo } from "react";
 import { useSpring, a } from "@react-spring/three";
-import { useControls, useStoreContext } from "leva";
+import { useStoreContext } from "leva";
+import { Edges } from "@react-three/drei";
 
 import { hexToHSL } from "./utils"
 
@@ -46,40 +47,13 @@ const lerpColor = (start, end, amount) => {
     return (rr << 16) + (rg << 8) + (rb | 0);
 }
 
-
-export const ModuleT = ({ moduleType, face, value, ...props }) => {
-    const group = useRef();
-    const geometry = useRef();
-    
-    const store = useStoreContext();
-
-    const highlightColor = store.get(moduleType + '_Highlight');
-    const startColor = store.get('start');
-    const endColor = store.get('end');
-
-    const [activated, setActivated] = useState(false);
-    const [rnd] = useState(() => Math.random() * 0.8 + 0.2);
-    const color = useMemo(() => {
-        return activated ? getColor(highlightColor, rnd) : lerpColor(startColor, endColor, rnd)
-    }, [activated, highlightColor, rnd, startColor, endColor]);
-
+const ModuleT = ({ value, color, ...props  }) => {
     const configs = useSpring({
-        position: activated ? [0, 1.5, 0] : [0, 0.5, 0],
+        position: [0, 0.5 + value, 0]
     });
 
-    const offset = OFFSET_MODULE[face];
-
     return (
-        <group
-            name={'Module' + moduleType}
-            moduleType={moduleType}
-            face={face}
-            value={value}
-            position={offset.position}
-            rotation={offset.rotation}
-            // onClick={(e) => (setActivated(!activated))}
-            onClick={(e) => (e.stopPropagation(), setActivated(!activated))}
-            ref={group}>
+        <>
             <mesh // Bottom
                 castShadow
                 receiveShadow>
@@ -87,11 +61,10 @@ export const ModuleT = ({ moduleType, face, value, ...props }) => {
                 <meshStandardMaterial attach='material' color={color} />
             </mesh>
             <a.mesh // Middle
-                // position={configs.position}
-                position={[0, 0.5 + value, 0]}
+                position={configs.position}
                 castShadow
                 receiveShadow>
-                <boxBufferGeometry ref={geometry} attach='geometry' args={[1, 2, 1]} />
+                <boxBufferGeometry attach='geometry' args={[1, 2, 1]} />
                 <meshStandardMaterial attach='material' color={color} />
                 <mesh // Top
                     position={[0, 1.5, 0]}
@@ -99,46 +72,20 @@ export const ModuleT = ({ moduleType, face, value, ...props }) => {
                     receiveShadow>
                     <boxBufferGeometry attach='geometry' />
                     <meshStandardMaterial attach='material' color={color} />
-                    {props.children}
+                    { props.children }
                 </mesh>
             </a.mesh>
-        </group>
+        </>
     );
-};
+}
 
-export const ModuleR = ({ moduleType, face, value, ...props }) => {
-    const group = useRef();
-    const geometry = useRef();
-
-    const store = useStoreContext();
-
-    const highlightColor = store.get(moduleType + '_Highlight');
-    const startColor = store.get('start');
-    const endColor = store.get('end');
-
-    const [activated, setActivated] = useState(false);
-    const [rnd] = useState(() => Math.random() * 0.8 + 0.2);
-    const color = useMemo(() => {
-        return activated ? getColor(highlightColor, rnd) : lerpColor(startColor, endColor, rnd)
-    }, [activated, highlightColor, rnd, startColor, endColor]);
-
+const ModuleR = ({ value, color, ...props  }) => {
     const configs = useSpring({
-        rotation: activated ? [0, Math.PI / 2, 0] : [0, 0, 0]
+        rotation: [0, 2 * Math.PI * value, 0]
     });
 
-    const offset = OFFSET_MODULE[face];
-
     return (
-        <group
-            name={'Module' + moduleType}
-            moduleType={moduleType}
-            face={face}
-            value={value}
-            position={offset.position}
-            rotation={offset.rotation}
-            onClick={(e) => (e.stopPropagation(), setActivated(!activated))}
-            // onClick={(e) => (setActivated(!activated))}
-            ref={group}>
+        <>
             <mesh // Bottom
                 castShadow
                 receiveShadow>
@@ -147,11 +94,10 @@ export const ModuleR = ({ moduleType, face, value, ...props }) => {
             </mesh>
             <a.mesh // Middle
                 position={[0, 1, 0]}
-                // rotation={configs.rotation}
-                rotation={[0, 2 * Math.PI * value, 0]}
+                rotation={configs.rotation}
                 castShadow
                 receiveShadow>
-                <boxBufferGeometry ref={geometry} attach='geometry' args={[1, 1, 1]} />
+                <boxBufferGeometry attach='geometry' args={[1, 1, 1]} />
                 <meshStandardMaterial attach='material' color={color} />
                 <mesh // Top
                     position={[0, 1, 0]}
@@ -159,19 +105,48 @@ export const ModuleR = ({ moduleType, face, value, ...props }) => {
                     receiveShadow>
                     <boxBufferGeometry attach='geometry' />
                     <meshStandardMaterial attach='material' color={color} />
-                    {props.children}
+                    { props.children }
                 </mesh>
             </a.mesh>
+        </>
+    );
+}
+
+export const Module = ({ moduleType, face, value, ...props }) => {
+    const group = useRef();
+
+    const store = useStoreContext();
+
+    const startColor = store.get(moduleType + '_start');
+    const endColor = store.get(moduleType + '_end');
+    const highlightColor = store.get(moduleType + '_highlight');
+
+    const [activated, setActivated] = useState(false);
+    const [rnd] = useState(() => Math.random() * 0.8 + 0.2);
+    const color = useMemo(() => activated ? getColor(highlightColor, rnd) : lerpColor(startColor, endColor, rnd), [activated, rnd, startColor, endColor, highlightColor]);
+
+    const offset = OFFSET_MODULE[face];
+
+    let mesh;
+    if (moduleType === 'T') {
+        mesh = <ModuleT value={value} color={color} {...props} />;
+    } else {
+        mesh = <ModuleR value={value} color={color} {...props} />;
+    }
+
+    return (
+        <group
+            name={'Module' + moduleType}
+            moduleType={moduleType}
+            face={face}
+            value={value}
+            position={offset.position}
+            rotation={offset.rotation}
+            onClick={(e) => (e.stopPropagation(), setActivated(!activated))}
+            ref={group}>
+            { mesh }
         </group>
     );
-};
-
-export const Module = ( props ) => {
-    if (props.moduleType === 'T') {
-        return <ModuleT {...props} />;
-    } else {
-        return <ModuleR {...props} />;
-    }
 }
 
 export const ModuleTree = ({ root, ...props }) => {
