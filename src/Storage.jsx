@@ -1,6 +1,7 @@
 // https://blog.logrocket.com/using-localstorage-react-hooks/
 
 import { useState, useEffect } from "react";
+import create from "zustand";
 
 export function getStorageValue(key, defaultValue) {
     if (typeof window !== "undefined") {
@@ -25,3 +26,8 @@ export const useLocalStorage = (key, defaultValue) => {
 
     return [value, setValue];
 };
+
+export const useStore = create(set => ({
+    selection: {},
+    setSelection: (selection) => set({ selection: selection })
+}));

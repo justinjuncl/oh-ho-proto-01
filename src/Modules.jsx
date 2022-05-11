@@ -3,6 +3,8 @@ import { useSpring, a } from "@react-spring/three";
 import { useStoreContext } from "leva";
 import { Edges } from "@react-three/drei";
 
+import { useStore } from "./Storage";
+
 import { hexToHSL } from "./utils"
 
 const OFFSET_MODULE = [{
@@ -22,6 +24,22 @@ const OFFSET_MODULE = [{
     rotation: [0, 0, Math.PI / 2],
 }];
 
+export const NORMAL_TO_FACE = {
+    [[0, 1, 0]]: 0,
+    [[0, 0, 1]]: 1,
+    [[1, 0, 0]]: 2,
+    [[0, 0, -1]]: 3,
+    [[-1, 0, 0]]: 4,
+};
+
+
+const closestParent = (group) => {
+    let g = group.parent;
+    while (g && g.type !== "Group") {
+        g = g.parent;
+    }
+    return g;
+};
 
 const getColor = (color, val) => {
     const [hue] = hexToHSL(color);
@@ -112,10 +130,12 @@ const ModuleR = ({ value, color, ...props  }) => {
     );
 }
 
-export const Module = ({ moduleType, face, value, ...props }) => {
+export const Module = ({ moduleType, face, value, id, ...props }) => {
     const group = useRef();
 
     const store = useStoreContext();
+
+    const setSelection = useStore(state => state.setSelection);
 
     const startColor = store.get(moduleType + '_start');
     const endColor = store.get(moduleType + '_end');
@@ -136,13 +156,20 @@ export const Module = ({ moduleType, face, value, ...props }) => {
 
     return (
         <group
-            name={'Module' + moduleType}
+            name={'Module_' + id}
             moduleType={moduleType}
             face={face}
             value={value}
             position={offset.position}
             rotation={offset.rotation}
-            onClick={(e) => (e.stopPropagation(), setActivated(!activated))}
+            onClick={(e) => {
+                e.stopPropagation();
+                setActivated(!activated);
+                setSelection({
+                    object: closestParent(e.object),
+                    face: NORMAL_TO_FACE[e.face.normal.toArray()]
+                })
+            }}
             ref={group}>
             { mesh }
         </group>
@@ -151,7 +178,7 @@ export const Module = ({ moduleType, face, value, ...props }) => {
 
 export const ModuleTree = ({ root, ...props }) => {
     return (
-        <Module moduleType={root.moduleType} face={root.face} value={root.value} {...props} >
+        <Module moduleType={root.moduleType} face={root.face} value={root.value} id={root.id} {...props} >
         {root.children.map(child => (
             <ModuleTree root={child} key={child.id} {...props}/>
         ))}

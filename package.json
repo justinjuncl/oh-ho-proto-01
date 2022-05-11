@@ -16,7 +16,8 @@
     "react-scripts": "5.0.0",
     "react-spring": "^9.4.2",
     "three": "^0.137.5",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+    "zustand": "^4.0.0-rc.1"
   },
   "scripts": {
     "predeploy": "npm run build",

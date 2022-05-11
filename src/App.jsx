@@ -1,13 +1,13 @@
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useLayoutEffect, useCallback, useMemo } from "react"
 import { Canvas } from "@react-three/fiber";
 import { softShadows, OrbitControls } from "@react-three/drei";
 
-import { useLocalStorage } from "./Storage";
+import { useLocalStorage, useStore } from "./Storage";
 import { download } from "./utils";
 
-import { ModuleTree } from "./Modules";
+import { ModuleTree, NORMAL_TO_FACE } from "./Modules";
 
-import { LevaPanel, LevaStoreProvider, useControls, useCreateStore, useStoreContext, folder, button } from "leva";
+import { Leva, LevaPanel, LevaStoreProvider, useControls, useCreateStore, useStoreContext, folder, button } from "leva";
 
 import "./App.css";
 
@@ -15,7 +15,7 @@ const closestParent = (group) => {
     let g = group.parent;
     while (g && g.type !== "Group") {
         g = g.parent;
-    }
+    };
     return g;
 };
 
@@ -92,21 +92,26 @@ const exampleColor = {
     R_highlight: '#e5851b',
 };
 
+const MODULES = {};
 
-const getTreeFolder = (tree, treeName) => {
-    console.log(tree);
-
+const getTreeFolder = (tree, treeName, moduleSelection) => {
     let childTreeFolder = tree.children.map(n => ({
-        ['Module_' + n.id]: getTreeFolder(n, treeName + '_' + n.id),
+        ['Module_' + n.id]: getTreeFolder(n, treeName + '_' + n.id, moduleSelection),
     }));
 
     let _folder = folder(Object.assign({
-            ['face_' + treeName]: { label: 'face', value: tree.face, options: [0, 1, 2, 3, 4, 5] },
+            ['face_' + treeName]: { label: 'face', value: tree.face, options: [0, 1, 2, 3, 4] },
             ['moduleType_' + treeName]: { label: 'moduleType', value: tree.moduleType, options: ['T', 'R'] },
-            ['value_' + treeName]: { label: 'value', value: tree.value, min: 0, max: 1 }
+            ['value_' + treeName]: { label: 'value', value: tree.value, min: 0, max: 1 },
         },
         ...childTreeFolder
-    ));
+    ), {
+        collapsed: false,
+        color: 'Module_' + tree.id === moduleSelection?.object?.name ? 'yellow' : 'white'
+    });
+
+    console.log('Module_' + tree.id === moduleSelection?.object?.name ? 'yellow' : 'white', moduleSelection);
+    MODULES[treeName] = _folder;
 
     return _folder;
 };
@@ -181,7 +186,7 @@ const resetModules = (store) => {
 
 const Scene = ({ tree, ...props }) => {
     const store = useStoreContext();
-    
+
     const background = store.get('background');
     const axis = store.get('axix');
     const grid = store.get('grid');
@@ -213,17 +218,28 @@ const App = () => {
     const [, updateState] = useState();
     const forceUpdate = useCallback(() => updateState({}), []);
 
-    console.log('render app');
+    const moduleSelection = useStore(state => state.selection);
+
     const [treeData, setTreeData] = useLocalStorage("treeData", exampleTree);
     const [colorData, setColorData] = useLocalStorage("colorData", exampleColor);
 
     const store = useCreateStore();
+    const storeColor = useCreateStore();
+    const storeDebug = useCreateStore();
 
-    const [ treeValues, ] = useControls(() => ({
-        ['Module_' + treeData.id]: getTreeFolder(treeData, treeData.id)
-    }), { store }, [treeData]);
+    const [debug, setDebug] = useControls(() => ({
+        Selection: {
+            value: JSON.stringify(moduleSelection, null, '  '),
+            editable: false
+        }
+    }), { store: storeDebug }, [moduleSelection]);
 
-    const [ colors, ] = useControls(() => ({
+    const [treeValues, setTreeValues] = useControls(() => ({
+        ['Module_' + treeData.id]: getTreeFolder(treeData, treeData.id, moduleSelection)
+    }), { store }, [treeData, moduleSelection]);
+
+
+    const [colors, ] = useControls(() => ({
         background: colorData.background,
         axis: colorData.axis,
         grid: colorData.grid,
@@ -233,7 +249,7 @@ const App = () => {
         R_start: colorData.R_start,
         R_end: colorData.R_end,
         R_highlight: colorData.R_highlight,
-    }), { store }, [colorData]);
+    }), { store: storeColor }, [colorData]);
 
     const [{ userLoadedtreeJSON }, ] = useControls(() => ({
         userLoadedtreeJSON: {
@@ -242,7 +258,7 @@ const App = () => {
         },
         'Export JSON': button((get) => {
             const exportData = {
-                tree: treeData,
+                tree: parseFromTreeValues(treeValues),
                 color: colors
             };
 
@@ -251,6 +267,21 @@ const App = () => {
     }), { store });
 
     useEffect(() => {
+            setDebug({ Selection: JSON.stringify({
+                module_name: moduleSelection?.object?.name,
+                select_face: moduleSelection?.face
+            }, null, '  ')});
+
+            const module_id = moduleSelection?.object?.name?.split('_')[1]
+
+            console.log(MODULES);
+            for (const [key, value] of Object.entries(MODULES)) {
+                MODULES[key].settings.collapsed = false;
+            }
+            console.log(treeValues, module_id);
+    }, [moduleSelection, setDebug]);
+
+    useLayoutEffect(() => {
         if (userLoadedtreeJSON) {
             const reader = new FileReader();
 
@@ -265,11 +296,11 @@ const App = () => {
                 if (result.color) {
                     setColorData(result.color);
                 }
-                console.log('update_before');
+                // console.log('update_before');
                 // setTreeValues(newTreeValues);
-                forceUpdate();
-                console.log('update_after');
-                // window.location.reload(false);
+                // forceUpdate();
+                // console.log('update_after');
+                window.location.reload(false);
             }
 
             reader.readAsText(userLoadedtreeJSON);
@@ -278,20 +309,64 @@ const App = () => {
 
     const parsedTree = useMemo(() => parseFromTreeValues(treeValues), [treeValues]);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         setTreeData(parsedTree);
     }, [setTreeData, parsedTree]);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         setColorData(colors);
     }, [setColorData, colors]);
 
     return (
         <>
-        <LevaPanel store={store} />
-        <LevaStoreProvider store={store}>
-            <Scene tree={parsedTree} />
-        </LevaStoreProvider>
+            <div
+                style={{
+                    position: 'fixed',
+                    zIndex: 100,
+                    pointerEvents: 'none',
+                    width: '100%',
+                    padding: 10,
+                }}
+            >
+                <div
+                    style={{
+                        pointerEvents: 'auto',
+                        float: 'left',
+                        width: 300,
+                    }}
+                >
+                    <Leva fill />
+                    <LevaPanel store={storeDebug} fill titleBar={false}/>
+                </div>
+                <div
+                    style={{
+                        float: 'right',
+                        display: 'inline-flex',
+                        gap: 10,
+                        alignItems: 'start'
+                    }}
+                >
+                    <div
+                        style={{
+                            pointerEvents: 'auto',
+                            width: 300,
+                        }}
+                    >
+                        <LevaPanel store={store} fill />
+                    </div>
+                    <div
+                        style={{
+                            pointerEvents: 'auto',
+                            width: 300,
+                        }}
+                    >
+                        <LevaPanel store={storeColor} fill />
+                    </div>
+                </div>
+            </div>
+            <LevaStoreProvider store={storeColor}>
+                <Scene tree={parsedTree} />
+            </LevaStoreProvider>
         </>
     );
 };
