@@ -5,6 +5,8 @@ import { Edges } from "@react-three/drei";
 
 import { useStore } from "./Storage";
 
+import { useModuleControls, ModulePanel } from "./Panel";
+
 import { hexToHSL } from "./utils"
 
 const OFFSET_MODULE = [{
@@ -48,24 +50,24 @@ const getColor = (color, val) => {
 
 const lerpColor = (start, end, amount) => {
     const a = parseInt(start.replace(/^#/, ''), 16),
-          b = parseInt(end.replace(/^#/, ''), 16),
+        b = parseInt(end.replace(/^#/, ''), 16),
 
-          ar = (a & 0xFF0000) >> 16,
-          ag = (a & 0x00FF00) >> 8,
-          ab = (a & 0x0000FF),
+        ar = (a & 0xFF0000) >> 16,
+        ag = (a & 0x00FF00) >> 8,
+        ab = (a & 0x0000FF),
 
-          br = (b & 0xFF0000) >> 16,
-          bg = (b & 0x00FF00) >> 8,
-          bb = (b & 0x0000FF),
+        br = (b & 0xFF0000) >> 16,
+        bg = (b & 0x00FF00) >> 8,
+        bb = (b & 0x0000FF),
 
-          rr = ar + amount * (br - ar),
-          rg = ag + amount * (bg - ag),
-          rb = ab + amount * (bb - ab);
+        rr = ar + amount * (br - ar),
+        rg = ag + amount * (bg - ag),
+        rb = ab + amount * (bb - ab);
 
     return (rr << 16) + (rg << 8) + (rb | 0);
 }
 
-const ModuleT = ({ value, color, ...props  }) => {
+const ModuleT = ({ value, color, ...props }) => {
     const configs = useSpring({
         position: [0, 0.5 + value, 0]
     });
@@ -90,14 +92,14 @@ const ModuleT = ({ value, color, ...props  }) => {
                     receiveShadow>
                     <boxBufferGeometry attach='geometry' />
                     <meshStandardMaterial attach='material' color={color} />
-                    { props.children }
+                    {props.children}
                 </mesh>
             </a.mesh>
         </>
     );
 }
 
-const ModuleR = ({ value, color, ...props  }) => {
+const ModuleR = ({ value, color, ...props }) => {
     const configs = useSpring({
         rotation: [0, 2 * Math.PI * value, 0]
     });
@@ -123,7 +125,7 @@ const ModuleR = ({ value, color, ...props  }) => {
                     receiveShadow>
                     <boxBufferGeometry attach='geometry' />
                     <meshStandardMaterial attach='material' color={color} />
-                    { props.children }
+                    {props.children}
                 </mesh>
             </a.mesh>
         </>
@@ -145,6 +147,7 @@ export const Module = ({ moduleType, face, value, id, ...props }) => {
     const [rnd] = useState(() => Math.random() * 0.8 + 0.2);
     const color = useMemo(() => activated ? getColor(highlightColor, rnd) : lerpColor(startColor, endColor, rnd), [activated, rnd, startColor, endColor, highlightColor]);
 
+    const name = 'Module_' + id;
     const offset = OFFSET_MODULE[face];
 
     let mesh;
@@ -156,7 +159,7 @@ export const Module = ({ moduleType, face, value, id, ...props }) => {
 
     return (
         <group
-            name={'Module_' + id}
+            name={name}
             moduleType={moduleType}
             face={face}
             value={value}
@@ -171,7 +174,7 @@ export const Module = ({ moduleType, face, value, id, ...props }) => {
                 })
             }}
             ref={group}>
-            { mesh }
+            {mesh}
         </group>
     );
 }
@@ -179,9 +182,9 @@ export const Module = ({ moduleType, face, value, id, ...props }) => {
 export const ModuleTree = ({ root, ...props }) => {
     return (
         <Module moduleType={root.moduleType} face={root.face} value={root.value} id={root.id} {...props} >
-        {root.children.map(child => (
-            <ModuleTree root={child} key={child.id} {...props}/>
-        ))}
+            {root.children.map(child => (
+                <ModuleTree root={child} key={child.id} {...props} />
+            ))}
         </Module>
     );
 }

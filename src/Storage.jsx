@@ -1,30 +1,31 @@
-// https://blog.logrocket.com/using-localstorage-react-hooks/
-
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import create from "zustand";
 
-export function getStorageValue(key, defaultValue) {
-    if (typeof window !== "undefined") {
-        const saved = localStorage.getItem(key);
-        const initial = saved !== null ? JSON.parse(saved) : defaultValue;
-        return initial;
-    }
-}
-
-export function setStorageValue(key, value) {
-    localStorage.setItem(key, JSON.stringify(value));
-}
-
+// https://www.30secondsofcode.org/react/s/use-local-storage
 export const useLocalStorage = (key, defaultValue) => {
-    const [value, setValue] = useState(() => {
-        return getStorageValue(key, defaultValue);
+    const [storedValue, setStoredValue] = useState(() => {
+        try {
+            const value = window.localStorage.getItem(key);
+
+            if (value) {
+                return JSON.parse(value);
+            } else {
+                window.localStorage.setItem(key, JSON.stringify(defaultValue));
+                return defaultValue;
+            }
+        } catch (err) {
+            return defaultValue;
+        }
     });
 
-    useEffect(() => {
-        setStorageValue(key, value);
-    }, [key, value]);
+    const setValue = newValue => {
+        try {
+            window.localStorage.setItem(key, JSON.stringify(newValue));
+        } catch (err) { }
+        setStoredValue(newValue);
+    };
 
-    return [value, setValue];
+    return [storedValue, setValue];
 };
 
 export const useStore = create(set => ({

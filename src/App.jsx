@@ -1,6 +1,6 @@
 import { useState, useEffect, useLayoutEffect, useCallback, useMemo } from "react"
 import { Canvas } from "@react-three/fiber";
-import { softShadows, OrbitControls } from "@react-three/drei";
+import { Select, useSelect, softShadows, OrbitControls } from "@react-three/drei";
 
 import { useLocalStorage, useStore } from "./Storage";
 import { download } from "./utils";
@@ -8,6 +8,10 @@ import { download } from "./utils";
 import { ModuleTree, NORMAL_TO_FACE } from "./Modules";
 
 import { Leva, LevaPanel, LevaStoreProvider, useControls, useCreateStore, useStoreContext, folder, button } from "leva";
+
+import { ModuleTreePanel } from "./Panel";
+
+import ReactFlow, { MiniMap, Controls, ReactFlowProvider, useReactFlow } from 'react-flow-renderer';
 
 import "./App.css";
 
@@ -21,9 +25,9 @@ const closestParent = (group) => {
 
 const traverse = (scene) => {
     const table = [];
-    scene.traverse( c => {
+    scene.traverse(c => {
         if (c.name.includes('Module')) {
-            table.push({id: c.id, parent_id: closestParent(c).id, face: c.face, moduleType: c.moduleType, value: c.value, children: []});
+            table.push({ id: c.id, parent_id: closestParent(c).id, face: c.face, moduleType: c.moduleType, value: c.value, children: [] });
         }
     });
 
@@ -100,10 +104,10 @@ const getTreeFolder = (tree, treeName, moduleSelection) => {
     }));
 
     let _folder = folder(Object.assign({
-            ['face_' + treeName]: { label: 'face', value: tree.face, options: [0, 1, 2, 3, 4] },
-            ['moduleType_' + treeName]: { label: 'moduleType', value: tree.moduleType, options: ['T', 'R'] },
-            ['value_' + treeName]: { label: 'value', value: tree.value, min: 0, max: 1 },
-        },
+        ['face_' + treeName]: { label: 'face', value: tree.face, options: [0, 1, 2, 3, 4] },
+        ['moduleType_' + treeName]: { label: 'moduleType', value: tree.moduleType, options: ['T', 'R'] },
+        ['value_' + treeName]: { label: 'value', value: tree.value, min: 0, max: 1 },
+    },
         ...childTreeFolder
     ), {
         collapsed: false,
@@ -129,9 +133,9 @@ const parseFromTreeValues = (treeValues) => {
             let value = treeValues[key.replace('face', 'value')];
 
             if (nodes.length === 1) {
-                table.push({id, face, moduleType, value, children: []});
+                table.push({ id, face, moduleType, value, children: [] });
             } else {
-                table.push({id, parent_id: Number(nodes[nodes.length - 2]), face, moduleType, value, children: []});
+                table.push({ id, parent_id: Number(nodes[nodes.length - 2]), face, moduleType, value, children: [] });
             }
         }
     }
@@ -184,6 +188,89 @@ const resetModules = (store) => {
     store.disposePaths(toRemove);
 };
 
+let nodeId = 0;
+
+const defaultNodes = [
+    {
+        id: 'a',
+        type: 'input',
+        data: { label: 'Node A' },
+        position: { x: 250, y: 25 },
+    },
+
+    {
+        id: 'b',
+        data: { label: 'Node B' },
+        position: { x: 100, y: 125 },
+    },
+    {
+        id: 'c',
+        type: 'output',
+        data: { label: 'Node C' },
+        position: { x: 250, y: 250 },
+    },
+];
+
+const defaultEdges = [{ id: 'ea-b', source: 'a', target: 'b' }];
+
+function Flow({ nodes, edges, onNodesChange, onEdgesChange, onConnect }) {
+    const reactFlowStyle = {
+        background: 'white'
+    };
+    const divStyle = {
+        width: 400,
+        height: 400,
+        zIndex: 900,
+        bottom: 0,
+        right: 0,
+        position: 'absolute'
+    };
+    const buttonStyle = {
+        position: 'absolute',
+        zIndex: 10,
+        top: 10,
+        left: 10
+    }
+
+    const reactFlowInstance = useReactFlow();
+    const onClick = useCallback(() => {
+        const id = `${++nodeId}`;
+        const newNode = {
+            id,
+            position: {
+                x: Math.random() * 500,
+                y: Math.random() * 500,
+            },
+            data: {
+                label: `Node ${id}`,
+            },
+        };
+        reactFlowInstance.addNodes(newNode);
+    }, []);
+
+    return (
+        <div style={divStyle}>
+            <ReactFlow
+                style={reactFlowStyle}
+                defaultNodes={defaultNodes}
+                defaultEdges={defaultEdges}
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                onConnect={onConnect}
+                proOptions={{
+                    account: 'paid-pro',
+                    hideAttribution: true
+                }}
+            >
+                <Controls />
+            </ReactFlow>
+            <button onClick={onClick} style={buttonStyle}>
+                add node
+            </button>
+        </div>
+    );
+}
+
 const Scene = ({ tree, ...props }) => {
     const store = useStoreContext();
 
@@ -204,7 +291,7 @@ const Scene = ({ tree, ...props }) => {
 
                 <group>
                     <group position={[0, 0, 0]}>
-                        <ModuleTree root={tree}/>
+                        <ModuleTree root={tree} />
                     </group>
                     <gridHelper args={[100, 20, axis, grid]} position={[0, 0, 0]} />
                 </group>
@@ -231,6 +318,10 @@ const App = () => {
         Selection: {
             value: JSON.stringify(moduleSelection, null, '  '),
             editable: false
+        },
+        Tree: {
+            value: '',
+            editable: false
         }
     }), { store: storeDebug }, [moduleSelection]);
 
@@ -238,8 +329,7 @@ const App = () => {
         ['Module_' + treeData.id]: getTreeFolder(treeData, treeData.id, moduleSelection)
     }), { store }, [treeData, moduleSelection]);
 
-
-    const [colors, ] = useControls(() => ({
+    const [colors,] = useControls(() => ({
         background: colorData.background,
         axis: colorData.axis,
         grid: colorData.grid,
@@ -251,7 +341,7 @@ const App = () => {
         R_highlight: colorData.R_highlight,
     }), { store: storeColor }, [colorData]);
 
-    const [{ userLoadedtreeJSON }, ] = useControls(() => ({
+    const [{ userLoadedtreeJSON },] = useControls(() => ({
         userLoadedtreeJSON: {
             label: 'Load JSON',
             image: undefined
@@ -263,22 +353,18 @@ const App = () => {
             };
 
             download(JSON.stringify(exportData, null, 2), 'export.json', 'application/json');
-        }, ),
+        }),
     }), { store });
 
     useEffect(() => {
-            setDebug({ Selection: JSON.stringify({
+        setDebug({
+            Selection: JSON.stringify({
                 module_name: moduleSelection?.object?.name,
                 select_face: moduleSelection?.face
-            }, null, '  ')});
+            }, null, '  ')
+        });
 
-            const module_id = moduleSelection?.object?.name?.split('_')[1]
-
-            console.log(MODULES);
-            for (const [key, value] of Object.entries(MODULES)) {
-                MODULES[key].settings.collapsed = false;
-            }
-            console.log(treeValues, module_id);
+        const module_id = moduleSelection?.object?.name?.split('_')[1]
     }, [moduleSelection, setDebug]);
 
     useLayoutEffect(() => {
@@ -317,8 +403,18 @@ const App = () => {
         setColorData(colors);
     }, [setColorData, colors]);
 
+    // useLayoutEffect(() => {
+    //     let result = ModuleTreePanel(parsedTree);
+    //     setDebug({
+    //         Tree: result
+    //     });
+    // }, [parsedTree, setDebug]);
+
     return (
         <>
+            <ReactFlowProvider>
+                <Flow />
+            </ReactFlowProvider>
             <div
                 style={{
                     position: 'fixed',
@@ -336,7 +432,7 @@ const App = () => {
                     }}
                 >
                     <Leva fill />
-                    <LevaPanel store={storeDebug} fill titleBar={false}/>
+                    <LevaPanel store={storeDebug} fill titleBar={false} />
                 </div>
                 <div
                     style={{
