@@ -32,3 +32,23 @@ export const useStore = create(set => ({
     selection: {},
     setSelection: (selection) => set({ selection: selection })
 }));
+
+export function download(data, filename, type) {
+    if (type.includes('json')) {
+        data = JSON.stringify(data, null, 2);
+    }
+
+    let file = new Blob([data], { type: type });
+    let a = document.createElement('a');
+    let url = URL.createObjectURL(file);
+
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function() {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    }, 0);
+}
+

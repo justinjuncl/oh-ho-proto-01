@@ -4,9 +4,6 @@ import { useStoreContext } from "leva";
 import { Edges } from "@react-three/drei";
 
 import { useStore } from "./Storage";
-
-import { useModuleControls, ModulePanel } from "./Panel";
-
 import { hexToHSL } from "./utils"
 
 const OFFSET_MODULE = [{
@@ -41,6 +38,34 @@ const closestParent = (group) => {
         g = g.parent;
     }
     return g;
+};
+
+const traverse = (scene) => {
+    const table = [];
+    scene.traverse(c => {
+        if (c.name.includes('Module')) {
+            table.push({ id: c.id, parent_id: closestParent(c).id, face: c.face, moduleType: c.moduleType, value: c.value, children: [] });
+        }
+    });
+
+    let node_map = {}, roots = [], node;
+
+    for (let i = 0; i < table.length; i++) {
+        node = table[i];
+        node_map[node.id] = i;
+
+        if (i === 0) {
+            roots.push(node);
+        } else {
+            table[node_map[node.parent_id]].children.push(node);
+        }
+
+        delete node.parent_id;
+    }
+
+    let treeData = JSON.stringify(roots[0], null, 2);
+
+    return treeData;
 };
 
 const getColor = (color, val) => {

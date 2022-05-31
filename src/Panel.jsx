@@ -24,26 +24,3 @@ export function useModuleControls(selected, props) {
     )
     return [store, moduleProps]
 }
-
-export function ModuleTreePanel(tree) {
-    let result = '';
-    let indent = 1;
-
-    console.log(tree)
-
-    function walk(node, indent = 1) {
-        tree.forEach(function(node) {
-            result += Array(indent).join('  ') + node.id + '\n';
-            if (node.children) {
-                indent++;
-                walk(node.children, indent + 1);
-            }
-            if (tree.indexOf(node) === tree.length - 1) {
-                indent--;
-            }
-        })
-    }
-
-    walk(tree);
-    return result;
-}

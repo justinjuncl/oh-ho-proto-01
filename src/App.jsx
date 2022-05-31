@@ -1,55 +1,15 @@
-import { useState, useEffect, useLayoutEffect, useCallback, useMemo } from "react"
+import { useEffect, useLayoutEffect, useMemo } from "react"
 import { Canvas } from "@react-three/fiber";
-import { Select, useSelect, softShadows, OrbitControls } from "@react-three/drei";
-
-import { useLocalStorage, useStore } from "./Storage";
-import { download } from "./utils";
-
-import { ModuleTree, NORMAL_TO_FACE } from "./Modules";
+import { softShadows, OrbitControls } from "@react-three/drei";
 
 import { Leva, LevaPanel, LevaStoreProvider, useControls, useCreateStore, useStoreContext, folder, button } from "leva";
 
-import { ModuleTreePanel } from "./Panel";
-
-import ReactFlow, { MiniMap, Controls, ReactFlowProvider, useReactFlow } from 'react-flow-renderer';
+import { useLocalStorage, useStore, download } from "./Storage";
+import { ModuleTree } from "./Modules";
+import { NodeEditor } from "./NodeEditor";
+import { OverlayEditor } from "./OverlayEditor";
 
 import "./App.css";
-
-const closestParent = (group) => {
-    let g = group.parent;
-    while (g && g.type !== "Group") {
-        g = g.parent;
-    };
-    return g;
-};
-
-const traverse = (scene) => {
-    const table = [];
-    scene.traverse(c => {
-        if (c.name.includes('Module')) {
-            table.push({ id: c.id, parent_id: closestParent(c).id, face: c.face, moduleType: c.moduleType, value: c.value, children: [] });
-        }
-    });
-
-    let node_map = {}, roots = [], node;
-
-    for (let i = 0; i < table.length; i++) {
-        node = table[i];
-        node_map[node.id] = i;
-
-        if (i === 0) {
-            roots.push(node);
-        } else {
-            table[node_map[node.parent_id]].children.push(node);
-        }
-
-        delete node.parent_id;
-    }
-
-    let treeData = JSON.stringify(roots[0], null, 2);
-
-    return treeData;
-};
 
 const exampleTree = {
     id: 0,
@@ -96,8 +56,6 @@ const exampleColor = {
     R_highlight: '#e5851b',
 };
 
-const MODULES = {};
-
 const getTreeFolder = (tree, treeName, moduleSelection) => {
     let childTreeFolder = tree.children.map(n => ({
         ['Module_' + n.id]: getTreeFolder(n, treeName + '_' + n.id, moduleSelection),
@@ -113,9 +71,6 @@ const getTreeFolder = (tree, treeName, moduleSelection) => {
         collapsed: false,
         color: 'Module_' + tree.id === moduleSelection?.object?.name ? 'yellow' : 'white'
     });
-
-    console.log('Module_' + tree.id === moduleSelection?.object?.name ? 'yellow' : 'white', moduleSelection);
-    MODULES[treeName] = _folder;
 
     return _folder;
 };
@@ -157,133 +112,16 @@ const parseFromTreeValues = (treeValues) => {
     return roots[0];
 };
 
-const flattenTreeData = (treeData) => {
-    let treeValues = {};
-
-    const dfs = (node, history) => {
-        treeValues['face' + history + node.id] = node.face;
-        treeValues['moduleType' + history + node.id] = node.moduleType;
-        treeValues['value' + history + node.id] = node.value;
-
-        for (const child of node.children) {
-            dfs(child, history + node.id + '_');
-        }
-    };
-
-    dfs(treeData, '_');
-    return treeValues;
-};
-
-const resetModules = (store) => {
-    const paths = store.getVisiblePaths();
-    const toRemove = [];
-    for (const path of paths) {
-        if (path.includes('Module')) {
-            toRemove.push(path);
-        }
-    }
-
-    console.log(toRemove);
-    // store.disposePaths(["Module_0.face_0", "Module_0.moduleType_0", "Module_0.value_0"]);
-    store.disposePaths(toRemove);
-};
-
-let nodeId = 0;
-
-const defaultNodes = [
-    {
-        id: 'a',
-        type: 'input',
-        data: { label: 'Node A' },
-        position: { x: 250, y: 25 },
-    },
-
-    {
-        id: 'b',
-        data: { label: 'Node B' },
-        position: { x: 100, y: 125 },
-    },
-    {
-        id: 'c',
-        type: 'output',
-        data: { label: 'Node C' },
-        position: { x: 250, y: 250 },
-    },
-];
-
-const defaultEdges = [{ id: 'ea-b', source: 'a', target: 'b' }];
-
-function Flow({ nodes, edges, onNodesChange, onEdgesChange, onConnect }) {
-    const reactFlowStyle = {
-        background: 'white'
-    };
-    const divStyle = {
-        width: 400,
-        height: 400,
-        zIndex: 900,
-        bottom: 0,
-        right: 0,
-        position: 'absolute'
-    };
-    const buttonStyle = {
-        position: 'absolute',
-        zIndex: 10,
-        top: 10,
-        left: 10
-    }
-
-    const reactFlowInstance = useReactFlow();
-    const onClick = useCallback(() => {
-        const id = `${++nodeId}`;
-        const newNode = {
-            id,
-            position: {
-                x: Math.random() * 500,
-                y: Math.random() * 500,
-            },
-            data: {
-                label: `Node ${id}`,
-            },
-        };
-        reactFlowInstance.addNodes(newNode);
-    }, []);
-
-    return (
-        <div style={divStyle}>
-            <ReactFlow
-                style={reactFlowStyle}
-                defaultNodes={defaultNodes}
-                defaultEdges={defaultEdges}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                onConnect={onConnect}
-                proOptions={{
-                    account: 'paid-pro',
-                    hideAttribution: true
-                }}
-            >
-                <Controls />
-            </ReactFlow>
-            <button onClick={onClick} style={buttonStyle}>
-                add node
-            </button>
-        </div>
-    );
-}
-
-const Scene = ({ tree, ...props }) => {
-    const store = useStoreContext();
-
-    const background = store.get('background');
-    const axis = store.get('axix');
-    const grid = store.get('grid');
+const Scene = ({ tree, storeColor, ...props }) => {
+    const background = storeColor.get('background');
+    const axis = storeColor.get('axix');
+    const grid = storeColor.get('grid');
 
     return (
         <Canvas
             camera={{ position: [-5, 2, 10], fov: 60 }}
-            onCreated={(state) => traverse(state.scene)}
         >
-            <LevaStoreProvider store={store}>
+            <LevaStoreProvider store={storeColor}>
                 <color attach="background" args={[background]} />
 
                 <ambientLight intensity={0.3} />
@@ -301,35 +139,25 @@ const Scene = ({ tree, ...props }) => {
     );
 };
 
-const App = () => {
-    const [, updateState] = useState();
-    const forceUpdate = useCallback(() => updateState({}), []);
 
+export const useTree = (storeTree, storeColor, storeDebug) => {
     const moduleSelection = useStore(state => state.selection);
 
     const [treeData, setTreeData] = useLocalStorage("treeData", exampleTree);
     const [colorData, setColorData] = useLocalStorage("colorData", exampleColor);
 
-    const store = useCreateStore();
-    const storeColor = useCreateStore();
-    const storeDebug = useCreateStore();
-
-    const [debug, setDebug] = useControls(() => ({
+    const [, setDebug] = useControls(() => ({
         Selection: {
-            value: JSON.stringify(moduleSelection, null, '  '),
-            editable: false
-        },
-        Tree: {
-            value: '',
+            value: JSON.stringify(moduleSelection, null, 2),
             editable: false
         }
     }), { store: storeDebug }, [moduleSelection]);
 
-    const [treeValues, setTreeValues] = useControls(() => ({
+    const [treeValues,] = useControls(() => ({
         ['Module_' + treeData.id]: getTreeFolder(treeData, treeData.id, moduleSelection)
-    }), { store }, [treeData, moduleSelection]);
+    }), { store: storeTree }, [treeData]);
 
-    const [colors,] = useControls(() => ({
+    const [color,] = useControls(() => ({
         background: colorData.background,
         axis: colorData.axis,
         grid: colorData.grid,
@@ -341,128 +169,69 @@ const App = () => {
         R_highlight: colorData.R_highlight,
     }), { store: storeColor }, [colorData]);
 
-    const [{ userLoadedtreeJSON },] = useControls(() => ({
-        userLoadedtreeJSON: {
+    const [{ userLoadedTreeJSON }, setUserLoadedTreeJSON] = useControls(() => ({
+        userLoadedTreeJSON: {
             label: 'Load JSON',
             image: undefined
         },
-        'Export JSON': button((get) => {
-            const exportData = {
-                tree: parseFromTreeValues(treeValues),
-                color: colors
-            };
-
-            download(JSON.stringify(exportData, null, 2), 'export.json', 'application/json');
+        'Export JSON': button(() => {
+            download({ tree: parseFromTreeValues(treeValues), color }, 'export.json', 'application/json');
         }),
-    }), { store });
+    }), { store: storeColor }, [treeValues, color]);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         setDebug({
             Selection: JSON.stringify({
                 module_name: moduleSelection?.object?.name,
                 select_face: moduleSelection?.face
-            }, null, '  ')
+            }, null, 2)
         });
-
-        const module_id = moduleSelection?.object?.name?.split('_')[1]
     }, [moduleSelection, setDebug]);
 
     useLayoutEffect(() => {
-        if (userLoadedtreeJSON) {
+        if (userLoadedTreeJSON) {
             const reader = new FileReader();
 
             reader.onload = () => {
-                const result = JSON.parse(reader.result);
-                // const newTreeValues = flattenTreeData(result.tree);
+                setUserLoadedTreeJSON({
+                    userLoadedTreeJSON: undefined
+                });
 
-                // resetModules(store);
-                if (result.tree) {
-                    setTreeData(result.tree);
-                }
-                if (result.color) {
-                    setColorData(result.color);
-                }
-                // console.log('update_before');
-                // setTreeValues(newTreeValues);
-                // forceUpdate();
-                // console.log('update_after');
-                window.location.reload(false);
+                const result = JSON.parse(reader.result);
+                setColorData(result.color);
+                setTreeData(result.tree);
             }
 
-            reader.readAsText(userLoadedtreeJSON);
+            reader.readAsText(userLoadedTreeJSON);
         }
-    }, [userLoadedtreeJSON, setTreeData, setColorData, forceUpdate]);
+    }, [userLoadedTreeJSON, setColorData, setTreeData, setUserLoadedTreeJSON]);
 
-    const parsedTree = useMemo(() => parseFromTreeValues(treeValues), [treeValues]);
-
-    useLayoutEffect(() => {
-        setTreeData(parsedTree);
-    }, [setTreeData, parsedTree]);
+    const tree = useMemo(() => parseFromTreeValues(treeValues), [treeValues]);
 
     useLayoutEffect(() => {
-        setColorData(colors);
-    }, [setColorData, colors]);
+        setTreeData(tree);
+    }, [tree, setTreeData]);
 
-    // useLayoutEffect(() => {
-    //     let result = ModuleTreePanel(parsedTree);
-    //     setDebug({
-    //         Tree: result
-    //     });
-    // }, [parsedTree, setDebug]);
+    useLayoutEffect(() => {
+        setColorData(color);
+    }, [color, setColorData]);
+
+    return [tree, setTreeData];
+}
+
+
+const App = () => {
+    const storeTree = useCreateStore();
+    const storeColor = useCreateStore();
+    const storeDebug = useCreateStore();
+
+    const [tree, setTreeData] = useTree(storeTree, storeColor, storeDebug);
 
     return (
         <>
-            <ReactFlowProvider>
-                <Flow />
-            </ReactFlowProvider>
-            <div
-                style={{
-                    position: 'fixed',
-                    zIndex: 100,
-                    pointerEvents: 'none',
-                    width: '100%',
-                    padding: 10,
-                }}
-            >
-                <div
-                    style={{
-                        pointerEvents: 'auto',
-                        float: 'left',
-                        width: 300,
-                    }}
-                >
-                    <Leva fill />
-                    <LevaPanel store={storeDebug} fill titleBar={false} />
-                </div>
-                <div
-                    style={{
-                        float: 'right',
-                        display: 'inline-flex',
-                        gap: 10,
-                        alignItems: 'start'
-                    }}
-                >
-                    <div
-                        style={{
-                            pointerEvents: 'auto',
-                            width: 300,
-                        }}
-                    >
-                        <LevaPanel store={store} fill />
-                    </div>
-                    <div
-                        style={{
-                            pointerEvents: 'auto',
-                            width: 300,
-                        }}
-                    >
-                        <LevaPanel store={storeColor} fill />
-                    </div>
-                </div>
-            </div>
-            <LevaStoreProvider store={storeColor}>
-                <Scene tree={parsedTree} />
-            </LevaStoreProvider>
+            <NodeEditor tree={tree} setTreeData={setTreeData} />
+            <OverlayEditor storeTree={storeTree} storeColor={storeColor} storeDebug={storeDebug} />
+            <Scene tree={tree} storeColor={storeColor} />
         </>
     );
 };
