@@ -83,6 +83,13 @@ function NodeEditor_({ nodes, edges, onNodesChange, onEdgesChange, onConnect, se
         event.dataTransfer.dropEffect = 'move';
     }, []);
 
+    const onClick = function() {
+        if (reactFlowWrapper.current) {
+            console.log(reactFlowWrapper.current)
+            reactFlowWrapper.current.classList.toggle('hide');
+        }
+    };
+
     const onDrop = useCallback(
         (event) => {
             event.preventDefault();
@@ -118,6 +125,9 @@ function NodeEditor_({ nodes, edges, onNodesChange, onEdgesChange, onConnect, se
 
     return (
         <div style={divStyle} className="reactflow-wrapper" ref={reactFlowWrapper}>
+            <button onClick={onClick} >
+                Node Editor
+            </button>
             <ReactFlow
                 style={reactFlowStyle}
                 nodeTypes={nodeTypes}
