@@ -1,8 +1,8 @@
-import { useEffect, useLayoutEffect, useMemo } from "react"
+import { useLayoutEffect, useMemo } from "react"
 import { Canvas } from "@react-three/fiber";
-import { softShadows, OrbitControls } from "@react-three/drei";
+import { OrbitControls } from "@react-three/drei";
 
-import { Leva, LevaPanel, LevaStoreProvider, useControls, useCreateStore, useStoreContext, folder, button } from "leva";
+import { LevaStoreProvider, useControls, useCreateStore, folder, button } from "leva";
 
 import { useLocalStorage, useStore, download } from "./Storage";
 import { ModuleTree } from "./Modules";
@@ -10,6 +10,7 @@ import { NodeEditor } from "./NodeEditor";
 import { OverlayEditor } from "./OverlayEditor";
 
 import "./App.css";
+import "./node-editor.css";
 
 const exampleTree = {
     id: 0,
