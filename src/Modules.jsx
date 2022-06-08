@@ -1,4 +1,4 @@
-import React, { useRef, useState, useMemo, useEffect } from "react";
+import React, { useRef, useState, useMemo, useEffect, forwardRef } from "react";
 import { useStoreContext } from "leva";
 import { Edges, useGLTF, useAnimations } from "@react-three/drei";
 
@@ -41,6 +41,10 @@ const traverse = (scene) => {
     return treeData;
 };
 
+const getGltfFileName = (moduleType) => {
+    return process.env.PUBLIC_URL + `/basic${moduleType}.gltf`;
+}
+
 const getColor = (color, val) => {
     const [hue] = hexToHSL(color);
     return "hsl(" + hue + ", " + Math.floor(100 * val) + "%, 50%)";
@@ -65,12 +69,44 @@ const lerpColor = (start, end, amount) => {
     return (rr << 16) + (rg << 8) + (rb | 0);
 }
 
-function ModuleT({ face, value, color, setActivated, ...props }) {
-    const group = useRef();
-    const { nodes, materials, animations } = useGLTF(process.env.PUBLIC_URL + '/basicT.gltf');
-    const { actions, mixer } = useAnimations(animations, group);
+const ModuleR = forwardRef(({ moduleType, ...props }, group) => {
+    const gltfFileName = getGltfFileName(moduleType);
+    const { nodes, materials } = useGLTF(gltfFileName);
 
-    const setSelection = useStore(state => state.setSelection);
+    return (
+        <group ref={group}>
+            <mesh name="u_base" geometry={nodes.u_base.geometry} material={materials.Material} position={[0, 0.5, 0]} />
+            <mesh name="u_pillar" geometry={nodes.u_pillar.geometry} material={materials.Material} position={[0, 1.5, 0]} />
+            <mesh name="u_head" geometry={nodes.u_head.geometry} material={materials.Material} position={[0, 2.5, 0]}>
+                {props.children}
+            </mesh>
+        </group>
+    );
+});
+
+const ModuleT = forwardRef(({ moduleType, ...props }, group) => {
+    const gltfFileName = getGltfFileName(moduleType);
+    const { nodes, materials } = useGLTF(gltfFileName);
+
+    return (
+        <group ref={group}>
+            <mesh name="u_base" geometry={nodes.u_base.geometry} material={materials.Material} position={[0, 0.5, 0]} />
+            <mesh name="u_pillar" geometry={nodes.u_pillar.geometry} material={materials.Material} position={[0, 1.5, 0]} />
+            <mesh name="u_head" geometry={nodes.u_head.geometry} material={materials.Material} position={[0, 2.5, 0]}>
+                {props.children}
+            </mesh>
+        </group>
+    );
+});
+
+export const Module = ({ face, value, id, ...props }) => {
+    const group = useRef();
+
+    const moduleType = props.moduleType;
+    const gltfFileName = getGltfFileName(moduleType);
+
+    const { nodes, animations } = useGLTF(gltfFileName);
+    const { actions, mixer } = useAnimations(animations, group);
 
     useEffect(() => {
         for (const name of Object.keys(actions)) {
@@ -100,98 +136,8 @@ function ModuleT({ face, value, color, setActivated, ...props }) {
         return [off, nor];
     }, [nodes]);
 
-    const offset = offset_pos_rot['f_' + face];
-
-    return (
-        <group ref={group} dispose={null} position={offset.position} rotation={offset.rotation}
-            onClick={(e) => {
-                e.stopPropagation();
-                setActivated((activated) => !activated);
-                setSelection({
-                    object: closestParent(e.object),
-                    face: normal_to_face[e.face.normal.toArray()]
-                })
-            }}
-        >
-            <mesh name="u_base" geometry={nodes.u_base.geometry} material={materials.Material} position={[0, 0.5, 0]} />
-            <mesh name="u_pillar" geometry={nodes.u_pillar.geometry} material={materials.Material} position={[0, 1.5, 0]} />
-            <mesh name="u_head" geometry={nodes.u_head.geometry} material={materials.Material} position={[0, 2.5, 0]}>
-                <group name="f_0" position={[0, 0.5, 0]} />
-                <group name="f_1" position={[0.5, 0, 0]} rotation={[Math.PI, 0, -Math.PI / 2]} />
-                <group name="f_2" position={[0, 0, -0.5]} rotation={[-Math.PI / 2, -Math.PI / 2, 0]} />
-                <group name="f_3" position={[-0.5, 0, 0]} rotation={[0, 0, Math.PI / 2]} />
-                <group name="f_4" position={[0, 0, 0.5]} rotation={[Math.PI / 2, Math.PI / 2, 0]} />
-                {props.children}
-            </mesh>
-        </group>
-    );
-}
-
-function ModuleR({ face, value, color, setActivated, ...props }) {
-    const group = useRef();
-    const { nodes, materials, animations } = useGLTF(process.env.PUBLIC_URL + '/basicR.gltf');
-    const { actions, mixer } = useAnimations(animations, group);
-
     const setSelection = useStore(state => state.setSelection);
-
-    useEffect(() => {
-        for (const name of Object.keys(actions)) {
-            actions[name].play();
-        }
-    }, [actions]);
-
-    useEffect(() => {
-        for (const name of Object.keys(actions)) {
-            actions[name].paused = false;
-        }
-        mixer.setTime(value);
-        for (const name of Object.keys(actions)) {
-            actions[name].paused = true;
-        }
-    }, [value, actions, mixer]);
-
-    const [offset_pos_rot, normal_to_face] = useMemo(() => {
-        let off = {};
-        let nor = {};
-        for (const [key, val] of Object.entries(nodes)) {
-            if (key.includes('f_')) {
-                off[key] = { position: val.position, rotation: val.rotation };
-                nor[val.position.clone().normalize().toArray()] = key;
-            }
-        }
-        return [off, nor];
-    }, [nodes]);
-
-    const offset = offset_pos_rot['f_' + face];
-
-    return (
-        <group ref={group} dispose={null} position={offset.position} rotation={offset.rotation}
-            onClick={(e) => {
-                e.stopPropagation();
-                setActivated((activated) => !activated);
-                setSelection({
-                    object: closestParent(e.object),
-                    face: normal_to_face[e.face.normal.toArray()]
-                })
-            }}
-        >
-            <mesh name="u_base" geometry={nodes.u_base.geometry} material={materials.Material} position={[0, 0.5, 0]} />
-            <mesh name="u_pillar" geometry={nodes.u_pillar.geometry} material={materials.Material} position={[0, 1.5, 0]} />
-            <mesh name="u_head" geometry={nodes.u_head.geometry} material={materials.Material} position={[0, 2.5, 0]}>
-                <group name="f_0" position={[0, 0.5, 0]} />
-                <group name="f_1" position={[0.5, 0, 0]} rotation={[Math.PI, 0, -Math.PI / 2]} />
-                <group name="f_2" position={[0, 0, -0.5]} rotation={[-Math.PI / 2, -Math.PI / 2, 0]} />
-                <group name="f_3" position={[-0.5, 0, 0]} rotation={[0, 0, Math.PI / 2]} />
-                <group name="f_4" position={[0, 0, 0.5]} rotation={[Math.PI / 2, Math.PI / 2, 0]} />
-                {props.children}
-            </mesh>
-        </group>
-    );
-}
-
-export const Module = ({ moduleType, face, value, id, ...props }) => {
     const store = useStoreContext();
-
     const startColor = store.get(moduleType + '_start');
     const endColor = store.get(moduleType + '_end');
     const highlightColor = store.get(moduleType + '_highlight');
@@ -200,13 +146,14 @@ export const Module = ({ moduleType, face, value, id, ...props }) => {
     const [rnd] = useState(() => Math.random() * 0.8 + 0.2);
     const color = useMemo(() => activated ? getColor(highlightColor, rnd) : lerpColor(startColor, endColor, rnd), [activated, rnd, startColor, endColor, highlightColor]);
 
+    const offset = offset_pos_rot['f_' + face];
     const name = 'Module_' + id;
 
     let mesh;
     if (moduleType === 'T') {
-        mesh = <ModuleT face={face} value={value} color={color} setActivated={setActivated} {...props} />;
+        mesh = <ModuleT ref={group} {...props} />;
     } else {
-        mesh = <ModuleR face={face} value={value} color={color} setActivated={setActivated} {...props} />;
+        mesh = <ModuleR ref={group} {...props} />;
     }
 
     return (
@@ -215,17 +162,38 @@ export const Module = ({ moduleType, face, value, id, ...props }) => {
             moduleType={moduleType}
             face={face}
             value={value}
+            position={offset.position}
+            rotation={offset.rotation}
+
+            onClick={(e) => {
+                e.stopPropagation();
+                if (!activated) {
+                    setSelection({
+                        object: closestParent(e.object),
+                        face: normal_to_face[e.face.normal.toArray()]
+                    });
+                } else {
+                    setSelection({});
+                }
+                setActivated((activated) => !activated);
+            }}
+            onPointerMissed={(e) => {
+                if (e.button === 0) {
+                    setActivated((activated) => false);
+                    setSelection({});
+                }
+            }}
         >
             {mesh}
         </group>
     );
 }
 
-export const ModuleTree = ({ root, ...props }) => {
+export const ModuleTree = ({ root }) => {
     return (
-        <Module moduleType={root.moduleType} face={root.face} value={root.value} id={root.id} {...props} >
+        <Module moduleType={root.moduleType} face={root.face} value={root.value} id={root.id}>
             {root.children.map(child => (
-                <ModuleTree root={child} key={child.id} {...props} />
+                <ModuleTree key={child.id} root={child} />
             ))}
         </Module>
     );
