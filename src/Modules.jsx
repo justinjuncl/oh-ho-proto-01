@@ -1,36 +1,9 @@
-import React, { useRef, useState, useMemo } from "react";
-import { useSpring, a } from "@react-spring/three";
+import React, { useRef, useState, useMemo, useEffect } from "react";
 import { useStoreContext } from "leva";
-import { Edges } from "@react-three/drei";
+import { Edges, useGLTF, useAnimations } from "@react-three/drei";
 
 import { useStore } from "./Storage";
 import { hexToHSL } from "./utils"
-
-const OFFSET_MODULE = [{
-    position: [0, 1, 0],
-    rotation: [0, 0, 0],
-}, {
-    position: [0, 0, 1],
-    rotation: [Math.PI / 2, 0, 0],
-}, {
-    position: [1, 0, 0],
-    rotation: [0, 0, -Math.PI / 2],
-}, {
-    position: [0, 0, -1],
-    rotation: [-Math.PI / 2, 0, 0],
-}, {
-    position: [-1, 0, 0],
-    rotation: [0, 0, Math.PI / 2],
-}];
-
-export const NORMAL_TO_FACE = {
-    [[0, 1, 0]]: 0,
-    [[0, 0, 1]]: 1,
-    [[1, 0, 0]]: 2,
-    [[0, 0, -1]]: 3,
-    [[-1, 0, 0]]: 4,
-};
-
 
 const closestParent = (group) => {
     let g = group.parent;
@@ -92,77 +65,132 @@ const lerpColor = (start, end, amount) => {
     return (rr << 16) + (rg << 8) + (rb | 0);
 }
 
-const ModuleT = ({ value, color, ...props }) => {
-    const configs = useSpring({
-        position: [0, 0.5 + value, 0]
-    });
+function ModuleT({ face, value, color, setActivated, ...props }) {
+    const group = useRef();
+    const { nodes, materials, animations } = useGLTF(process.env.PUBLIC_URL + '/basicT.gltf');
+    const { actions, mixer } = useAnimations(animations, group);
+
+    const setSelection = useStore(state => state.setSelection);
+
+    useEffect(() => {
+        for (const name of Object.keys(actions)) {
+            actions[name].play();
+        }
+    }, [actions]);
+
+    useEffect(() => {
+        for (const name of Object.keys(actions)) {
+            actions[name].paused = false;
+        }
+        mixer.setTime(value);
+        for (const name of Object.keys(actions)) {
+            actions[name].paused = true;
+        }
+    }, [value, actions, mixer]);
+
+    const [offset_pos_rot, normal_to_face] = useMemo(() => {
+        let off = {};
+        let nor = {};
+        for (const [key, val] of Object.entries(nodes)) {
+            if (key.includes('f_')) {
+                off[key] = { position: val.position, rotation: val.rotation };
+                nor[val.position.clone().normalize().toArray()] = key;
+            }
+        }
+        return [off, nor];
+    }, [nodes]);
+
+    const offset = offset_pos_rot['f_' + face];
 
     return (
-        <>
-            <mesh // Bottom
-                castShadow
-                receiveShadow>
-                <boxBufferGeometry attach='geometry' />
-                <meshStandardMaterial attach='material' color={color} />
+        <group ref={group} dispose={null} position={offset.position} rotation={offset.rotation}
+            onClick={(e) => {
+                e.stopPropagation();
+                setActivated((activated) => !activated);
+                setSelection({
+                    object: closestParent(e.object),
+                    face: normal_to_face[e.face.normal.toArray()]
+                })
+            }}
+        >
+            <mesh name="u_base" geometry={nodes.u_base.geometry} material={materials.Material} position={[0, 0.5, 0]} />
+            <mesh name="u_pillar" geometry={nodes.u_pillar.geometry} material={materials.Material} position={[0, 1.5, 0]} />
+            <mesh name="u_head" geometry={nodes.u_head.geometry} material={materials.Material} position={[0, 2.5, 0]}>
+                <group name="f_0" position={[0, 0.5, 0]} />
+                <group name="f_1" position={[0.5, 0, 0]} rotation={[Math.PI, 0, -Math.PI / 2]} />
+                <group name="f_2" position={[0, 0, -0.5]} rotation={[-Math.PI / 2, -Math.PI / 2, 0]} />
+                <group name="f_3" position={[-0.5, 0, 0]} rotation={[0, 0, Math.PI / 2]} />
+                <group name="f_4" position={[0, 0, 0.5]} rotation={[Math.PI / 2, Math.PI / 2, 0]} />
+                {props.children}
             </mesh>
-            <a.mesh // Middle
-                position={configs.position}
-                castShadow
-                receiveShadow>
-                <boxBufferGeometry attach='geometry' args={[1, 2, 1]} />
-                <meshStandardMaterial attach='material' color={color} />
-                <mesh // Top
-                    position={[0, 1.5, 0]}
-                    castShadow
-                    receiveShadow>
-                    <boxBufferGeometry attach='geometry' />
-                    <meshStandardMaterial attach='material' color={color} />
-                    {props.children}
-                </mesh>
-            </a.mesh>
-        </>
+        </group>
     );
 }
 
-const ModuleR = ({ value, color, ...props }) => {
-    const configs = useSpring({
-        rotation: [0, 2 * Math.PI * value, 0]
-    });
+function ModuleR({ face, value, color, setActivated, ...props }) {
+    const group = useRef();
+    const { nodes, materials, animations } = useGLTF(process.env.PUBLIC_URL + '/basicR.gltf');
+    const { actions, mixer } = useAnimations(animations, group);
+
+    const setSelection = useStore(state => state.setSelection);
+
+    useEffect(() => {
+        for (const name of Object.keys(actions)) {
+            actions[name].play();
+        }
+    }, [actions]);
+
+    useEffect(() => {
+        for (const name of Object.keys(actions)) {
+            actions[name].paused = false;
+        }
+        mixer.setTime(value);
+        for (const name of Object.keys(actions)) {
+            actions[name].paused = true;
+        }
+    }, [value, actions, mixer]);
+
+    const [offset_pos_rot, normal_to_face] = useMemo(() => {
+        let off = {};
+        let nor = {};
+        for (const [key, val] of Object.entries(nodes)) {
+            if (key.includes('f_')) {
+                off[key] = { position: val.position, rotation: val.rotation };
+                nor[val.position.clone().normalize().toArray()] = key;
+            }
+        }
+        return [off, nor];
+    }, [nodes]);
+
+    const offset = offset_pos_rot['f_' + face];
 
     return (
-        <>
-            <mesh // Bottom
-                castShadow
-                receiveShadow>
-                <boxBufferGeometry attach='geometry' />
-                <meshStandardMaterial attach='material' color={color} />
+        <group ref={group} dispose={null} position={offset.position} rotation={offset.rotation}
+            onClick={(e) => {
+                e.stopPropagation();
+                setActivated((activated) => !activated);
+                setSelection({
+                    object: closestParent(e.object),
+                    face: normal_to_face[e.face.normal.toArray()]
+                })
+            }}
+        >
+            <mesh name="u_base" geometry={nodes.u_base.geometry} material={materials.Material} position={[0, 0.5, 0]} />
+            <mesh name="u_pillar" geometry={nodes.u_pillar.geometry} material={materials.Material} position={[0, 1.5, 0]} />
+            <mesh name="u_head" geometry={nodes.u_head.geometry} material={materials.Material} position={[0, 2.5, 0]}>
+                <group name="f_0" position={[0, 0.5, 0]} />
+                <group name="f_1" position={[0.5, 0, 0]} rotation={[Math.PI, 0, -Math.PI / 2]} />
+                <group name="f_2" position={[0, 0, -0.5]} rotation={[-Math.PI / 2, -Math.PI / 2, 0]} />
+                <group name="f_3" position={[-0.5, 0, 0]} rotation={[0, 0, Math.PI / 2]} />
+                <group name="f_4" position={[0, 0, 0.5]} rotation={[Math.PI / 2, Math.PI / 2, 0]} />
+                {props.children}
             </mesh>
-            <a.mesh // Middle
-                position={[0, 1, 0]}
-                rotation={configs.rotation}
-                castShadow
-                receiveShadow>
-                <boxBufferGeometry attach='geometry' args={[1, 1, 1]} />
-                <meshStandardMaterial attach='material' color={color} />
-                <mesh // Top
-                    position={[0, 1, 0]}
-                    castShadow
-                    receiveShadow>
-                    <boxBufferGeometry attach='geometry' />
-                    <meshStandardMaterial attach='material' color={color} />
-                    {props.children}
-                </mesh>
-            </a.mesh>
-        </>
+        </group>
     );
 }
 
 export const Module = ({ moduleType, face, value, id, ...props }) => {
-    const group = useRef();
-
     const store = useStoreContext();
-
-    const setSelection = useStore(state => state.setSelection);
 
     const startColor = store.get(moduleType + '_start');
     const endColor = store.get(moduleType + '_end');
@@ -173,13 +201,12 @@ export const Module = ({ moduleType, face, value, id, ...props }) => {
     const color = useMemo(() => activated ? getColor(highlightColor, rnd) : lerpColor(startColor, endColor, rnd), [activated, rnd, startColor, endColor, highlightColor]);
 
     const name = 'Module_' + id;
-    const offset = OFFSET_MODULE[face];
 
     let mesh;
     if (moduleType === 'T') {
-        mesh = <ModuleT value={value} color={color} {...props} />;
+        mesh = <ModuleT face={face} value={value} color={color} setActivated={setActivated} {...props} />;
     } else {
-        mesh = <ModuleR value={value} color={color} {...props} />;
+        mesh = <ModuleR face={face} value={value} color={color} setActivated={setActivated} {...props} />;
     }
 
     return (
@@ -188,17 +215,7 @@ export const Module = ({ moduleType, face, value, id, ...props }) => {
             moduleType={moduleType}
             face={face}
             value={value}
-            position={offset.position}
-            rotation={offset.rotation}
-            onClick={(e) => {
-                e.stopPropagation();
-                setActivated(!activated);
-                setSelection({
-                    object: closestParent(e.object),
-                    face: NORMAL_TO_FACE[e.face.normal.toArray()]
-                })
-            }}
-            ref={group}>
+        >
             {mesh}
         </group>
     );
@@ -214,3 +231,5 @@ export const ModuleTree = ({ root, ...props }) => {
     );
 }
 
+useGLTF.preload(process.env.PUBLIC_URL + '/basicR.gltf');
+useGLTF.preload(process.env.PUBLIC_URL + '/basicT.gltf');

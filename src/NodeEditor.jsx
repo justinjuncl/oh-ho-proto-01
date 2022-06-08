@@ -84,10 +84,7 @@ function NodeEditor_({ nodes, edges, onNodesChange, onEdgesChange, onConnect, se
     }, []);
 
     const onClick = function() {
-        if (reactFlowWrapper.current) {
-            console.log(reactFlowWrapper.current)
-            reactFlowWrapper.current.classList.toggle('hide');
-        }
+        reactFlowWrapper.current.classList.toggle('hide');
     };
 
     const onDrop = useCallback(

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo } from "react"
+import { useLayoutEffect, useMemo, Suspense } from "react"
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 
@@ -122,20 +122,22 @@ const Scene = ({ tree, storeColor, ...props }) => {
         <Canvas
             camera={{ position: [-5, 2, 10], fov: 60 }}
         >
-            <LevaStoreProvider store={storeColor}>
-                <color attach="background" args={[background]} />
+            <Suspense fallback={null} >
+                <LevaStoreProvider store={storeColor}>
+                    <color attach="background" args={[background]} />
 
-                <ambientLight intensity={0.3} />
-                <pointLight position={[0, 20, 0]} intensity={1.5} />
+                    <ambientLight intensity={0.3} />
+                    <pointLight position={[0, 20, 0]} intensity={1.5} />
 
-                <group>
-                    <group position={[0, 0, 0]}>
-                        <ModuleTree root={tree} />
+                    <group>
+                        <group position={[0, 0, 0]}>
+                            <ModuleTree root={tree} />
+                        </group>
+                        <gridHelper args={[100, 20, axis, grid]} position={[0, 0, 0]} />
                     </group>
-                    <gridHelper args={[100, 20, axis, grid]} position={[0, 0, 0]} />
-                </group>
-                <OrbitControls />
-            </LevaStoreProvider>
+                    <OrbitControls />
+                </LevaStoreProvider>
+            </Suspense>
         </Canvas>
     );
 };

@@ -1,6 +1,7 @@
 .module-node-wrapper {
     /* filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.25)); */
 }
+
 .module-node {
     width: 122px;
     height: 76px;
@@ -8,10 +9,11 @@
     padding: 0;
     border-radius: 5px;
     background: white;
-    font-family: "Courier";
+    font-family: Courier, serif;
     font-size: 11px;
     z-index: initial;
 }
+
 .module-node h1 {
     margin: 0;
     padding: 0;
@@ -20,12 +22,14 @@
     font-size: 30px;
     font-style: italic;
 }
+
 .module-node .label-face {
     position: absolute;
     padding-top: 5px;
     right: 13px;
     text-align: right;
 }
+
 .module-node .values {
     border-bottom: 1px solid #000;
     padding-bottom: 5px;
@@ -36,22 +40,27 @@
     display: flex;
     flex-grow: 1;
 }
+
 .module-node .react-flow__handle {
     width: 10px;
     height: 10px;
 }
+
 .module-node .react-flow__handle-bottom {
     bottom: -5px;
 }
+
 .module-node .react-flow__handle.source {
     border: 1px solid #000;
     background: #000;
     z-index: -1;
 }
+
 .module-node .react-flow__handle.target {
     border: 1px solid #000;
     background: #fff;
 }
+
 .module-node .label-value {
     color: white;
     background-color: black;
@@ -59,6 +68,7 @@
     border-radius: 3px;
     text-align: center;
 }
+
 .module-node label {
     width: 54px;
     text-align: left;
@@ -67,6 +77,7 @@
     font-size: 12px;
     padding-left: 10px;
 }
+
 .module-node [data-handleid="target_face"] { left: calc(100% - 27px); }
 .module-node [data-handleid="target_value"] { top: 46px; }
 
@@ -76,14 +87,13 @@
 .module-node [data-handleid="source_3"] { left: 70%; }
 .module-node [data-handleid="source_4"] { left: 90%; }
 
-
 .reactflow-wrapper {
     transform: translateY(0);
-    transition: transform;
+    transition: transform 0.3s ease-in-out;
 }
 
 .reactflow-wrapper.hide {
-    transform: translateY(95%);
+    transform: translateY(calc(100% - 22px));
 }
 
 .modules-list {
@@ -92,8 +102,9 @@
     left: 6px;
     z-index: 4;
 }
+
 .modules-list-item {
-    font-family: "Courier";
+    font-family: Courier, serif;
     font-weight: bold;
     font-style: italic;
     border: 1px solid black;
