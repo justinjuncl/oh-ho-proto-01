@@ -2,20 +2,26 @@ import { useCallback, useMemo, useRef } from "react"
 import ReactFlow, { Handle, Position, Controls, ReactFlowProvider, useReactFlow } from 'react-flow-renderer';
 import dagre from 'dagre';
 
+import { useStore } from './Storage';
+
 const nodeWidth = 122;
 const nodeHeight = 76;
 
-let nodeId = 30;
-const getId = () => `${nodeId++}`;
+const getId = (nodes) => {
+    return Math.max(...nodes.map(node => Number(node.id))) + 1;
+}
 
 function BaseModuleNode({ data }) {
+    const selection = useStore(store => store.selection);
+    const selected = selection?.object?.name === data.label;
+
     const name = data.moduleType + data.label.replace("Module_", "");
     return (
         <div className="module-node-wrapper">
-            <div className="module-node">
+            <div className={"module-node" + (selected ? " module-selected" : "")}>
                 <Handle type="target" position={Position.Top} id="target_face" />
                 <Handle type="target" position={Position.Left} id="target_value" />
-                <div className="module-node-inner">
+                <div className={"module-node-inner"}>
                     <h1>{name}</h1>
                     <label className="label-face">face</label>
                     <div className="values">
@@ -57,7 +63,7 @@ function ModulesList() {
     );
 }
 
-function NodeEditor_({ nodes, edges, onNodesChange, onEdgesChange, onConnect, setTreeData, tree, ...props }) {
+function NodeEditor_({ nodes, edges, setTreeData, tree, ...props }) {
     const reactFlowStyle = {
         background: 'white'
     };
@@ -70,10 +76,15 @@ function NodeEditor_({ nodes, edges, onNodesChange, onEdgesChange, onConnect, se
         position: 'absolute'
     };
 
-    const nodeTypes = useMemo(() => ({
-        T: TModuleNode,
-        R: RModuleNode,
-    }), []);
+    const nodeTypes = useMemo(
+        () => ({
+            T: TModuleNode,
+            R: RModuleNode,
+        }),
+        []
+    );
+
+    const setSelection = useStore(store => store.setSelection);
 
     const reactFlowInstance = useReactFlow();
     const reactFlowWrapper = useRef(null);
@@ -86,6 +97,44 @@ function NodeEditor_({ nodes, edges, onNodesChange, onEdgesChange, onConnect, se
     const onClick = function() {
         reactFlowWrapper.current.classList.toggle('hide');
     };
+
+    const onNodesChange = function(changes) {
+        for (const change of changes) {
+            if (change.type === 'select') {
+                if (change.selected) {
+                    setSelection({
+                        object: {
+                            name: 'Module_' + change.id,
+                        },
+                        face: {}
+                    });
+                } else {
+                    setSelection({});
+                }
+            }
+        }
+    }
+
+    const onEdgesChange = useCallback(
+        (changes) => {
+            if (changes[0]?.type === 'select') return;
+            const nodes = reactFlowInstance.getNodes();
+            const edges = reactFlowInstance.getEdges();
+            const tree = getTreeFromNodesEdges(nodes, edges);
+            setTreeData(tree);
+        },
+        [reactFlowInstance, setTreeData]
+    );
+
+    const onConnect = useCallback(
+        (changes) => {
+            const nodes = reactFlowInstance.getNodes();
+            const edges = reactFlowInstance.getEdges();
+            const tree = getTreeFromNodesEdges(nodes, edges);
+            setTreeData(tree);
+        },
+        [reactFlowInstance, setTreeData]
+    );
 
     const onDrop = useCallback(
         (event) => {
@@ -102,17 +151,17 @@ function NodeEditor_({ nodes, edges, onNodesChange, onEdgesChange, onConnect, se
                 x: event.clientX - reactFlowBounds.left - nodeWidth / 2,
                 y: event.clientY - reactFlowBounds.top - nodeHeight / 2,
             });
-            const newId = getId();
+            const newId = getId(reactFlowInstance.getNodes());
 
             const newNode = {
-                id: newId,
-                type,
-                position,
+                id: `${newId}`,
                 data: {
                     label: `Module_${newId}`,
                     value: 0,
                     moduleType: type
                 },
+                position,
+                type,
             };
 
             reactFlowInstance.setNodes((nds) => nds.concat(newNode));
@@ -135,10 +184,7 @@ function NodeEditor_({ nodes, edges, onNodesChange, onEdgesChange, onConnect, se
                 onConnect={onConnect}
                 onDrop={onDrop}
                 onDragOver={onDragOver}
-                proOptions={{
-                    account: 'paid-pro',
-                    hideAttribution: true
-                }}
+                proOptions={{ account: 'paid-pro', hideAttribution: true }}
             >
                 {/* <Controls /> */}
             </ReactFlow>
@@ -150,7 +196,7 @@ function NodeEditor_({ nodes, edges, onNodesChange, onEdgesChange, onConnect, se
 const dagreGraph = new dagre.graphlib.Graph();
 dagreGraph.setDefaultEdgeLabel(() => ({}));
 
-const getLayoutedElements = (nodes, edges, direction = 'TB') => {
+function getLayoutedElements(nodes, edges, direction = 'TB') {
     const isHorizontal = direction === 'LR';
     dagreGraph.setGraph({ rankdir: direction });
 
@@ -180,7 +226,7 @@ const getLayoutedElements = (nodes, edges, direction = 'TB') => {
     return [nodes, edges];
 };
 
-export function NodeEditor({ tree, setTreeData, ...props }) {
+function getNodesEdgesFromTree(tree) {
     let nodes = [];
     let edges = [];
 
@@ -202,6 +248,7 @@ export function NodeEditor({ tree, setTreeData, ...props }) {
                 source: `${node.id}`,
                 sourceHandle: `source_${child.face}`,
                 target: `${child.id}`,
+                targetHandle: 'target_face',
             });
 
             dfs(child);
@@ -210,6 +257,75 @@ export function NodeEditor({ tree, setTreeData, ...props }) {
 
     dfs(tree);
 
+    return [nodes, edges];
+}
+
+function getTreeFromNodesEdges(nodes, edges) {
+    console.log(nodes, edges);
+    const getNode = (node) => {
+        return {
+            id: Number(node.id),
+            face: 0,
+            moduleType: node.data.moduleType,
+            value: node.data.value,
+            children: []
+        }
+    }
+
+    const fillChildren = (node) => {
+        for (const child_id of successors[node.id] || []) {
+            const child_node = id_to_node[child_id];
+            const edge_id = `E_${node.id}-${child_id}`;
+            child_node.face = edge_to_face[edge_id];
+            node.children.push(child_node);
+
+            fillChildren(child_node);
+        }
+    }
+
+    const id_to_node = {};
+    for (const node of nodes) {
+        id_to_node[node.id] = getNode(node);
+    }
+
+    const edge_to_face = {};
+    const predecessors = {};
+    const successors = {};
+    for (const edge of edges) {
+        const edge_id = `E_${edge.source}-${edge.target}`;
+        edge_to_face[edge_id] = Number(edge.sourceHandle.replace('source_', ''));
+
+        if (predecessors[edge.target]) {
+            predecessors[edge.target].push(edge.source);
+        } else {
+            predecessors[edge.target] = [edge.source];
+        }
+
+        if (successors[edge.source]) {
+            successors[edge.source].push(edge.target);
+        } else {
+            successors[edge.source] = [edge.target];
+        }
+    }
+
+    const sources = nodes
+        .filter(node => !predecessors.hasOwnProperty(node.id))
+        .map(node => node.id);
+
+    const roots = [];
+    for (const source of sources) {
+        roots.push(id_to_node[source]);
+    }
+
+    for (const root of roots) {
+        fillChildren(root);
+    }
+
+    return roots[0];
+}
+
+export function NodeEditor({ tree, setTreeData, ...props }) {
+    let [nodes, edges] = getNodesEdgesFromTree(tree);
     [nodes, edges] = getLayoutedElements(nodes, edges);
 
     return (

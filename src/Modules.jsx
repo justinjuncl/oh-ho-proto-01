@@ -7,7 +7,7 @@ import { hexToHSL } from "./utils"
 
 const closestParent = (group) => {
     let g = group.parent;
-    while (g && g.type !== "Group") {
+    while (g && g.moduleType === undefined) {
         g = g.parent;
     }
     return g;
@@ -73,11 +73,16 @@ const ModuleR = forwardRef(({ moduleType, ...props }, group) => {
     const gltfFileName = getGltfFileName(moduleType);
     const { nodes, materials } = useGLTF(gltfFileName);
 
+    const material = useMemo(() => {
+        return materials.Material.clone();
+    }, [materials]);
+
     return (
         <group ref={group}>
-            <mesh name="u_base" geometry={nodes.u_base.geometry} material={materials.Material} position={[0, 0.5, 0]} />
-            <mesh name="u_pillar" geometry={nodes.u_pillar.geometry} material={materials.Material} position={[0, 1.5, 0]} />
-            <mesh name="u_head" geometry={nodes.u_head.geometry} material={materials.Material} position={[0, 2.5, 0]}>
+            {/* <mesh name="u_base" geometry={nodes.u_base.geometry} material={material} material-wireframe={true} position={[0, 0.5, 0]} /> */}
+            <mesh name="u_base" geometry={nodes.u_base.geometry} material={material} material-wireframe={false} material-color={props.color} position={[0, 0.5, 0]} />
+            <mesh name="u_pillar" geometry={nodes.u_pillar.geometry} material={material} position={[0, 1.5, 0]} />
+            <mesh name="u_head" geometry={nodes.u_head.geometry} material={material} position={[0, 2.5, 0]}>
                 {props.children}
             </mesh>
         </group>
@@ -88,11 +93,16 @@ const ModuleT = forwardRef(({ moduleType, ...props }, group) => {
     const gltfFileName = getGltfFileName(moduleType);
     const { nodes, materials } = useGLTF(gltfFileName);
 
+    const material = useMemo(() => {
+        return materials.Material.clone();
+    }, [materials]);
+
     return (
         <group ref={group}>
-            <mesh name="u_base" geometry={nodes.u_base.geometry} material={materials.Material} position={[0, 0.5, 0]} />
-            <mesh name="u_pillar" geometry={nodes.u_pillar.geometry} material={materials.Material} position={[0, 1.5, 0]} />
-            <mesh name="u_head" geometry={nodes.u_head.geometry} material={materials.Material} position={[0, 2.5, 0]}>
+            {/* <mesh name="u_base" geometry={nodes.u_base.geometry} material={material} material-wireframe={true} position={[0, 0.5, 0]} /> */}
+            <mesh name="u_base" geometry={nodes.u_base.geometry} material={material} material-wireframe={false} material-color={props.color} position={[0, 0.5, 0]} />
+            <mesh name="u_pillar" geometry={nodes.u_pillar.geometry} material={material} position={[0, 1.5, 0]} />
+            <mesh name="u_head" geometry={nodes.u_head.geometry} material={material} position={[0, 2.5, 0]}>
                 {props.children}
             </mesh>
         </group>
@@ -136,28 +146,31 @@ export const Module = ({ face, value, id, ...props }) => {
         return [off, nor];
     }, [nodes]);
 
+    const selection = useStore(state => state.selection);
     const setSelection = useStore(state => state.setSelection);
+
     const store = useStoreContext();
     const startColor = store.get(moduleType + '_start');
     const endColor = store.get(moduleType + '_end');
     const highlightColor = store.get(moduleType + '_highlight');
 
-    const [activated, setActivated] = useState(false);
+    const name = 'Module_' + id;
+    const offset = offset_pos_rot['f_' + face];
+
+    const activated = selection?.object?.name === name;
     const [rnd] = useState(() => Math.random() * 0.8 + 0.2);
     const color = useMemo(() => activated ? getColor(highlightColor, rnd) : lerpColor(startColor, endColor, rnd), [activated, rnd, startColor, endColor, highlightColor]);
 
-    const offset = offset_pos_rot['f_' + face];
-    const name = 'Module_' + id;
-
     let mesh;
     if (moduleType === 'T') {
-        mesh = <ModuleT ref={group} {...props} />;
+        mesh = <ModuleT ref={group} color={color} {...props} />;
     } else {
-        mesh = <ModuleR ref={group} {...props} />;
+        mesh = <ModuleR ref={group} color={color} {...props} />;
     }
 
     return (
         <group
+            ref={group}
             name={name}
             moduleType={moduleType}
             face={face}
@@ -173,13 +186,6 @@ export const Module = ({ face, value, id, ...props }) => {
                         face: normal_to_face[e.face.normal.toArray()]
                     });
                 } else {
-                    setSelection({});
-                }
-                setActivated((activated) => !activated);
-            }}
-            onPointerMissed={(e) => {
-                if (e.button === 0) {
-                    setActivated((activated) => false);
                     setSelection({});
                 }
             }}

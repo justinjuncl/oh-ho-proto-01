@@ -1,6 +1,7 @@
 import { useLayoutEffect, useMemo, Suspense } from "react"
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
+import { softShadows, OrbitControls } from "@react-three/drei";
+import { EffectComposer, Outline, Selection, Vignette } from "@react-three/postprocessing";
 
 import { LevaStoreProvider, useControls, useCreateStore, folder, button } from "leva";
 
@@ -11,6 +12,8 @@ import { OverlayEditor } from "./OverlayEditor";
 
 import "./App.css";
 import "./node-editor.css";
+
+// softShadows();
 
 const exampleTree = {
     id: 0,
@@ -118,19 +121,54 @@ const Scene = ({ tree, storeColor, ...props }) => {
     const axis = storeColor.get('axix');
     const grid = storeColor.get('grid');
 
+    const setSelection = useStore(state => state.setSelection);
+
+    // const s = [];
+    // if (selection?.object) {
+    //     s.push(selection.object.children[0]);
+    // }
+    //
+    // console.log(s);
+    // console.log(1);
+
     return (
         <Canvas
             camera={{ position: [-5, 2, 10], fov: 60 }}
+            onPointerMissed={(e) => {
+                if (e.button === 0) {
+                    setSelection({});
+                }
+            }}
         >
+            {/* <EffectComposer> */}
+            {/*     <Vignette */}
+            {/*         offset={0.1} // vignette offset */}
+            {/*         darkness={1} // vignette darkness */}
+            {/*         eskil={false} // Eskil's vignette technique */}
+            {/*     /> */}
+            {/* </EffectComposer> */}
             <Suspense fallback={null} >
                 <LevaStoreProvider store={storeColor}>
                     <color attach="background" args={[background]} />
 
                     <ambientLight intensity={0.3} />
-                    <pointLight position={[0, 20, 0]} intensity={1.5} />
+                    {/* <pointLight position={[0, 20, 0]} intensity={1.5} /> */}
+                    <directionalLight
+                        castShadow
+                        position={[0, 20, 0]}
+                        intensity={1.5}
+                        shadow-mapSize-width={1024}
+                        shadow-mapSize-height={1024}
+                        shadow-camera-far={50}
+                        shadow-camera-left={-10}
+                        shadow-camera-right={10}
+                        shadow-camera-top={10}
+                        shadow-camera-bottom={-10}
+                    />
 
                     <group>
-                        <group position={[0, 0, 0]}>
+                        {/* <group position={[0, 0.5, 0]} rotation={[0, 0, Math.PI]}> */}
+                        <group>
                             <ModuleTree root={tree} />
                         </group>
                         <gridHelper args={[100, 20, axis, grid]} position={[0, 0, 0]} />
@@ -145,6 +183,8 @@ const Scene = ({ tree, storeColor, ...props }) => {
 
 export const useTree = (storeTree, storeColor, storeDebug) => {
     const moduleSelection = useStore(state => state.selection);
+
+    // console.log('useTree');
 
     const [treeData, setTreeData] = useLocalStorage("treeData", exampleTree);
     const [colorData, setColorData] = useLocalStorage("colorData", exampleColor);
