@@ -1,9 +1,10 @@
-import React, { useRef, useState, useMemo, useEffect, forwardRef } from "react";
+import React, { useRef, useState, useMemo, useEffect } from "react";
 import { useStoreContext } from "leva";
 import { Edges, useGLTF, useAnimations } from "@react-three/drei";
 
 import { useStore } from "./Storage";
-import { hexToHSL } from "./utils"
+import { lerpColor, getColor } from "./utils"
+
 
 const closestParent = (group) => {
     let g = group.parent;
@@ -13,63 +14,12 @@ const closestParent = (group) => {
     return g;
 };
 
-const traverse = (scene) => {
-    const table = [];
-    scene.traverse(c => {
-        if (c.name.includes('Module')) {
-            table.push({ id: c.id, parent_id: closestParent(c).id, face: c.face, moduleType: c.moduleType, value: c.value, children: [] });
-        }
-    });
-
-    let node_map = {}, roots = [], node;
-
-    for (let i = 0; i < table.length; i++) {
-        node = table[i];
-        node_map[node.id] = i;
-
-        if (i === 0) {
-            roots.push(node);
-        } else {
-            table[node_map[node.parent_id]].children.push(node);
-        }
-
-        delete node.parent_id;
-    }
-
-    let treeData = JSON.stringify(roots[0], null, 2);
-
-    return treeData;
-};
-
 const getGltfFileName = (moduleType) => {
     return process.env.PUBLIC_URL + `/basic${moduleType}.gltf`;
 }
 
-const getColor = (color, val) => {
-    const [hue] = hexToHSL(color);
-    return "hsl(" + hue + ", " + Math.floor(100 * val) + "%, 50%)";
-}
 
-const lerpColor = (start, end, amount) => {
-    const a = parseInt(start.replace(/^#/, ''), 16),
-        b = parseInt(end.replace(/^#/, ''), 16),
-
-        ar = (a & 0xFF0000) >> 16,
-        ag = (a & 0x00FF00) >> 8,
-        ab = (a & 0x0000FF),
-
-        br = (b & 0xFF0000) >> 16,
-        bg = (b & 0x00FF00) >> 8,
-        bb = (b & 0x0000FF),
-
-        rr = ar + amount * (br - ar),
-        rg = ag + amount * (bg - ag),
-        rb = ab + amount * (bb - ab);
-
-    return (rr << 16) + (rg << 8) + (rb | 0);
-}
-
-const ModuleR = forwardRef(({ moduleType, ...props }, group) => {
+const ModuleR = ({ moduleType, ...props }) => {
     const gltfFileName = getGltfFileName(moduleType);
     const { nodes, materials } = useGLTF(gltfFileName);
 
@@ -78,18 +28,18 @@ const ModuleR = forwardRef(({ moduleType, ...props }, group) => {
     }, [materials]);
 
     return (
-        <group ref={group}>
+        <>
             {/* <mesh name="u_base" geometry={nodes.u_base.geometry} material={material} material-wireframe={true} position={[0, 0.5, 0]} /> */}
             <mesh name="u_base" geometry={nodes.u_base.geometry} material={material} material-wireframe={false} material-color={props.color} position={[0, 0.5, 0]} />
             <mesh name="u_pillar" geometry={nodes.u_pillar.geometry} material={material} position={[0, 1.5, 0]} />
             <mesh name="u_head" geometry={nodes.u_head.geometry} material={material} position={[0, 2.5, 0]}>
                 {props.children}
             </mesh>
-        </group>
+        </>
     );
-});
+};
 
-const ModuleT = forwardRef(({ moduleType, ...props }, group) => {
+const ModuleT = ({ moduleType, ...props }) => {
     const gltfFileName = getGltfFileName(moduleType);
     const { nodes, materials } = useGLTF(gltfFileName);
 
@@ -98,16 +48,41 @@ const ModuleT = forwardRef(({ moduleType, ...props }, group) => {
     }, [materials]);
 
     return (
-        <group ref={group}>
+        <>
             {/* <mesh name="u_base" geometry={nodes.u_base.geometry} material={material} material-wireframe={true} position={[0, 0.5, 0]} /> */}
             <mesh name="u_base" geometry={nodes.u_base.geometry} material={material} material-wireframe={false} material-color={props.color} position={[0, 0.5, 0]} />
             <mesh name="u_pillar" geometry={nodes.u_pillar.geometry} material={material} position={[0, 1.5, 0]} />
             <mesh name="u_head" geometry={nodes.u_head.geometry} material={material} position={[0, 2.5, 0]}>
                 {props.children}
             </mesh>
-        </group>
+        </>
     );
-});
+};
+
+const ModuleComplexT = ({ moduleType, ...props }) => {
+    const gltfFileName = process.env.PUBLIC_URL + '/complexT2.gltf';
+    const { nodes, materials } = useGLTF(gltfFileName);
+
+    return (
+        <>
+            <mesh receiveShadow castShadow name="u_pillar" geometry={nodes.u_pillar.geometry} material={materials.Material} position={[0, 1, 0]} />
+            <mesh receiveShadow castShadow name="u_head" geometry={nodes.u_head.geometry} material={materials.Material} position={[0, 2.5, 0]}>
+                <group name="f_0" position={[0, 0.5, 0]} />
+                <group name="f_1" position={[0.5, 0, 0]} rotation={[Math.PI, 0, -Math.PI / 2]} />
+                <group name="f_2" position={[0, 0, -0.5]} rotation={[-Math.PI / 2, -Math.PI / 2, 0]} />
+                <group name="f_3" position={[-0.5, 0, 0]} rotation={[0, 0, Math.PI / 2]} />
+                <group name="f_4" position={[0, 0, 0.5]} rotation={[Math.PI / 2, Math.PI / 2, 0]} />
+                {props.children}
+            </mesh>
+            <mesh receiveShadow castShadow name="u_base" geometry={nodes.u_base.geometry} material={materials.Material} position={[0, 0.5, 0]} />
+            <mesh receiveShadow castShadow name="Torus" geometry={nodes.Torus.geometry} material={materials['Material.001']} position={[0, 2.88, 0]} scale={[0.56, 0.49, 0.56]} />
+            <mesh receiveShadow castShadow name="Torusbottom001" geometry={nodes.Torusbottom001.geometry} material={materials['Material.001']} scale={[1, 0, 1]} />
+            <mesh receiveShadow castShadow name="Torusbottom002" geometry={nodes.Torusbottom002.geometry} material={materials['Material.001']} scale={[1, 0, 1]} />
+            <mesh receiveShadow castShadow name="Torusbottom003" geometry={nodes.Torusbottom003.geometry} material={materials['Material.001']} scale={[1, 0, 1]} />
+            <mesh receiveShadow castShadow name="Torusbottom004" geometry={nodes.Torusbottom004.geometry} material={materials['Material.001']} scale={[1, 0, 1]} />
+        </>
+    );
+};
 
 export const Module = ({ face, value, id, ...props }) => {
     const group = useRef();
@@ -128,7 +103,9 @@ export const Module = ({ face, value, id, ...props }) => {
         for (const name of Object.keys(actions)) {
             actions[name].paused = false;
         }
-        mixer.setTime(value);
+
+        mixer.setTime(value * 0.99999);
+
         for (const name of Object.keys(actions)) {
             actions[name].paused = true;
         }
@@ -146,8 +123,8 @@ export const Module = ({ face, value, id, ...props }) => {
         return [off, nor];
     }, [nodes]);
 
-    const selection = useStore(state => state.selection);
-    const setSelection = useStore(state => state.setSelection);
+    const selection = useStore(store => store.selection);
+    const setSelection = useStore(store => store.setSelection);
 
     const store = useStoreContext();
     const startColor = store.get(moduleType + '_start');
@@ -161,12 +138,13 @@ export const Module = ({ face, value, id, ...props }) => {
     const [rnd] = useState(() => Math.random() * 0.8 + 0.2);
     const color = useMemo(() => activated ? getColor(highlightColor, rnd) : lerpColor(startColor, endColor, rnd), [activated, rnd, startColor, endColor, highlightColor]);
 
-    let mesh;
-    if (moduleType === 'T') {
-        mesh = <ModuleT ref={group} color={color} {...props} />;
-    } else {
-        mesh = <ModuleR ref={group} color={color} {...props} />;
-    }
+    const mesh = useMemo(() => {
+        if (moduleType === 'T') {
+            return <ModuleT color={color} {...props} />;
+        } else {
+            return <ModuleR color={color} {...props} />;
+        }
+    }, [moduleType, color, props]);
 
     return (
         <group
@@ -207,3 +185,6 @@ export const ModuleTree = ({ root }) => {
 
 useGLTF.preload(process.env.PUBLIC_URL + '/basicR.gltf');
 useGLTF.preload(process.env.PUBLIC_URL + '/basicT.gltf');
+
+// useGLTF.preload(process.env.PUBLIC_URL + '/complexT2.gltf');
+// useGLTF.preload(process.env.PUBLIC_URL + '/complexT3.gltf');

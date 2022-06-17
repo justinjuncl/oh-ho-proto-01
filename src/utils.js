@@ -42,3 +42,28 @@ export function hexToHSL(H) {
 
     return [h, s, l];
 }
+
+export const getColor = (color, val) => {
+    const [hue] = hexToHSL(color);
+    return "hsl(" + hue + ", " + Math.floor(100 * val) + "%, 50%)";
+}
+
+export const lerpColor = (start, end, amount) => {
+    const a = parseInt(start.replace(/^#/, ''), 16),
+        b = parseInt(end.replace(/^#/, ''), 16),
+
+        ar = (a & 0xFF0000) >> 16,
+        ag = (a & 0x00FF00) >> 8,
+        ab = (a & 0x0000FF),
+
+        br = (b & 0xFF0000) >> 16,
+        bg = (b & 0x00FF00) >> 8,
+        bb = (b & 0x0000FF),
+
+        rr = ar + amount * (br - ar),
+        rg = ag + amount * (bg - ag),
+        rb = ab + amount * (bb - ab);
+
+    return (rr << 16) + (rg << 8) + (rb | 0);
+}
+

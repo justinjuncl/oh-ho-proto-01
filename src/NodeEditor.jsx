@@ -1,8 +1,12 @@
-import { useCallback, useMemo, useRef } from "react"
-import ReactFlow, { Handle, Position, Controls, ReactFlowProvider, useReactFlow } from 'react-flow-renderer';
+import { useCallback, useEffect, useMemo, useRef } from "react"
+import ReactFlow, { Handle, Position, Controls, ReactFlowProvider, useReactFlow, applyNodeChanges } from 'react-flow-renderer';
 import dagre from 'dagre';
+import { TangleText } from "./TangleText";
 
-import { useStore } from './Storage';
+import { useStore, useTreeStore } from './Storage';
+
+import "./NodeEditor.css";
+
 
 const nodeWidth = 122;
 const nodeHeight = 76;
@@ -12,21 +16,45 @@ const getId = (nodes) => {
 }
 
 function BaseModuleNode({ data }) {
-    const selection = useStore(store => store.selection);
-    const selected = selection?.object?.name === data.label;
+    const reactFlowInstance = useReactFlow();
+    const setTreeData = useTreeStore(store => store.setTreeData);
 
     const name = data.moduleType + data.label.replace("Module_", "");
+
+    const onChange = useCallback(
+        (value) => {
+            const node_id = data.label.replace("Module_", "");
+            const nodes = reactFlowInstance.getNodes().map((node) => {
+                if (node.id === node_id) {
+                    return {
+                        ...node,
+                        data: { ...node.data, value: value }
+                    };
+                }
+                return node;
+            });
+            const edges = reactFlowInstance.getEdges();
+            const tree = getTreeFromNodesEdges(nodes, edges);
+            setTreeData(tree);
+        },
+        [data.label, reactFlowInstance, setTreeData]
+    );
+
     return (
         <div className="module-node-wrapper">
-            <div className={"module-node" + (selected ? " module-selected" : "")}>
+            <div className="module-node">
                 <Handle type="target" position={Position.Top} id="target_face" />
                 <Handle type="target" position={Position.Left} id="target_value" />
-                <div className={"module-node-inner"}>
-                    <h1>{name}</h1>
+                <div className="module-node-inner">
+                    <h1 className="module-node-drag-handle">{name}</h1>
                     <label className="label-face">face</label>
                     <div className="values">
                         <label className="label-value-text">value</label>
-                        <label className="label-value">{data.value.toFixed(2)}</label>
+                        <TangleText
+                            className="label-value"
+                            value={data.value}
+                            step={0.01} min={0} max={1} decimals={2}
+                            onChange={onChange} />
                     </div>
                     <label>face</label>
                 </div>
@@ -63,7 +91,7 @@ function ModulesList() {
     );
 }
 
-function NodeEditor_({ nodes, edges, setTreeData, tree, ...props }) {
+function NodeEditor_({ nodes, edges, ...props }) {
     const reactFlowStyle = {
         background: 'white'
     };
@@ -84,36 +112,56 @@ function NodeEditor_({ nodes, edges, setTreeData, tree, ...props }) {
         []
     );
 
+    const setTreeData = useTreeStore(store => store.setTreeData);
+
+    const selection = useStore(store => store.selection);
     const setSelection = useStore(store => store.setSelection);
 
     const reactFlowInstance = useReactFlow();
     const reactFlowWrapper = useRef(null);
+
+    useEffect(() => {
+        if (selection?.object?.name.replace("Module_", "")) {
+            const changes = [{
+                id: selection.object.name.replace("Module_", ""),
+                type: "select",
+                selected: true
+            }];
+            reactFlowInstance.setNodes((nodes) => applyNodeChanges(changes, nodes));
+        }
+    }, [reactFlowInstance, selection?.object?.name]);
 
     const onDragOver = useCallback((event) => {
         event.preventDefault();
         event.dataTransfer.dropEffect = 'move';
     }, []);
 
-    const onClick = function() {
-        reactFlowWrapper.current.classList.toggle('hide');
-    };
+    const onClick = useCallback(
+        () => {
+            reactFlowWrapper.current.classList.toggle('hide');
+        }, []
+    );
 
-    const onNodesChange = function(changes) {
-        for (const change of changes) {
-            if (change.type === 'select') {
-                if (change.selected) {
-                    setSelection({
-                        object: {
-                            name: 'Module_' + change.id,
-                        },
-                        face: {}
-                    });
-                } else {
-                    setSelection({});
+    const onNodesChange = useCallback(
+        (changes) => {
+            for (const change of changes) {
+                if (change.type === 'select') {
+                    if (change.selected) {
+                        setSelection({
+                            object: {
+                                name: 'Module_' + change.id,
+                            },
+                            face: {}
+                        });
+                    } else {
+                        setSelection({});
+                    }
                 }
             }
-        }
-    }
+            reactFlowInstance.setNodes((ns) => applyNodeChanges(changes, ns));
+        },
+        [reactFlowInstance, setSelection]
+    );
 
     const onEdgesChange = useCallback(
         (changes) => {
@@ -239,7 +287,8 @@ function getNodesEdgesFromTree(tree) {
                 moduleType: node.moduleType
             },
             position: { x: 0, y: 0 },
-            type: node.moduleType
+            type: node.moduleType,
+            dragHandle: '.module-node-drag-handle',
         });
 
         for (const child of node.children) {
@@ -261,7 +310,6 @@ function getNodesEdgesFromTree(tree) {
 }
 
 function getTreeFromNodesEdges(nodes, edges) {
-    console.log(nodes, edges);
     const getNode = (node) => {
         return {
             id: Number(node.id),
@@ -324,13 +372,14 @@ function getTreeFromNodesEdges(nodes, edges) {
     return roots[0];
 }
 
-export function NodeEditor({ tree, setTreeData, ...props }) {
+export function NodeEditor(props) {
+    const tree = useTreeStore(store => store.treeData);
     let [nodes, edges] = getNodesEdgesFromTree(tree);
     [nodes, edges] = getLayoutedElements(nodes, edges);
 
     return (
         <ReactFlowProvider>
-            <NodeEditor_ nodes={nodes} edges={edges} tree={tree} setTreeData={(tree) => { setTreeData(tree) }} props={props} />
+            <NodeEditor_ nodes={nodes} edges={edges} props={props} />
         </ReactFlowProvider>
     );
 }
