@@ -83,11 +83,13 @@ export const OverlayEditor = ({ storeColor, storeDebug }) => {
                 pointerEvents: 'none',
                 width: '100%',
                 padding: 10,
+                display: 'inline-flex',
+                gap: 10,
+                alignItems: 'start'
             }}
         >
             <div
                 style={{
-                    float: 'left',
                     pointerEvents: 'auto',
                     width: 300,
                 }}
@@ -97,20 +99,11 @@ export const OverlayEditor = ({ storeColor, storeDebug }) => {
             </div>
             <div
                 style={{
-                    float: 'right',
-                    display: 'inline-flex',
-                    gap: 10,
-                    alignItems: 'start'
+                    pointerEvents: 'auto',
+                    width: 300,
                 }}
             >
-                <div
-                    style={{
-                        pointerEvents: 'auto',
-                        width: 300,
-                    }}
-                >
-                    <LevaPanel store={storeColor} fill />
-                </div>
+                <LevaPanel store={storeColor} fill titleBar={false} />
             </div>
         </div>
     );

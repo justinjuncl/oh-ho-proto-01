@@ -201,25 +201,23 @@ function NodeEditor_({ nodes, edges, ...props }) {
     );
 
     return (
-        <Panel name="Node Editor">
-            <div className="reactflow-wrapper" ref={reactFlowWrapper}>
-                <ReactFlow
-                    style={reactFlowStyle}
-                    nodeTypes={nodeTypes}
-                    defaultNodes={nodes}
-                    defaultEdges={edges}
-                    onNodesChange={onNodesChange}
-                    onEdgesChange={onEdgesChange}
-                    onConnect={onConnect}
-                    onDrop={onDrop}
-                    onDragOver={onDragOver}
-                    proOptions={{ account: 'paid-pro', hideAttribution: true }}
-                >
-                    {/* <Controls /> */}
-                </ReactFlow>
-                <ModulesList />
-            </div>
-        </Panel>
+        <div className="reactflow-wrapper" ref={reactFlowWrapper}>
+            <ReactFlow
+                style={reactFlowStyle}
+                nodeTypes={nodeTypes}
+                defaultNodes={nodes}
+                defaultEdges={edges}
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                onConnect={onConnect}
+                onDrop={onDrop}
+                onDragOver={onDragOver}
+                proOptions={{ account: 'paid-pro', hideAttribution: true }}
+            >
+                {/* <Controls /> */}
+            </ReactFlow>
+            <ModulesList />
+        </div>
     );
 }
 

@@ -1,30 +1,18 @@
 .panel-wrapper {
-    width: 622px;
+    width: 600px;
     height: 100%;
-    z-index: 900;
-    bottom: 0px;
-    right: 0px;
-    position: absolute;
+    top: 0;
+    right: 0;
     display: flex;
+    position: absolute;
+    align-items: flex-start;
+    pointer-events: none;
     transform: translateX(0);
     transition: transform 0.3s ease-in-out;
-    pointer-events: none;;
 }
 
 .panel-wrapper.hide {
-    transform: translateX(calc(100% - 22px));
-}
-
-.panel-wrapper .button {
-    writing-mode: vertical-rl;
-    background-color: yellow;
-    color: black;
-    padding: 10px 2px;
-    cursor: pointer;
-    width: 23px;
-    height: 113px;
-    margin-top: 50px;
-    pointer-events: all;
+    transform: translateX(100%);
 }
 
 .panel-inner {
@@ -34,4 +22,32 @@
     backdrop-filter: blur(5px);
     pointer-events: all;
     border-left: 1px solid yellow;
+    border-bottom: 1px solid yellow;
+}
+
+.panel-list {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    display: inline-flex;
+    flex-direction: column;
+    pointer-events: none;
+    z-index: 200;
+}
+
+.button {
+    writing-mode: vertical-rl;
+    color: black;
+    padding: 10px 2px;
+    cursor: pointer;
+    transform: translateX(-600px);
+    transition: transform 0.3s ease-in-out;
+    background-color: #9d9200;
+    pointer-events: all;
+}
+
+.button.hide {
+    transform: translateX(0);
+    background-color: #ffef00;
 }
