@@ -1,26 +1,25 @@
-import { LevaPanel, useControls as useControlsImpl, useCreateStore } from 'leva'
 
-export function ModulePanel({ selected }) {
-    return <LevaPanel store={selected?.moduleData.store} titleBar={{ title: 'Module_' + selected?.id }} />
-}
+import { useState, useRef, useCallback } from "react";
+import "./Panel.css";
 
-export function useModuleControls(selected, props) {
-    const store = useCreateStore()
-    const isSelected = selected === store
+export function Panel(props) {
+    const [isOpen, setOpen] = useState(false);
+    const ref = useRef(null);
 
-    const moduleProps = useControlsImpl(
-        Object.keys(props).reduce(
-            (acc, key) => ({
-                ...acc,
-                [key]: {
-                    ...props[key],
-                    transient: false,
-                    render: (get) => isSelected
-                }
-            }),
-            {}
-        ),
-        { store },
-    )
-    return [store, moduleProps]
+    const onClick = useCallback(
+        () => {
+            ref.current.classList.toggle('hide');
+        }, []
+    );
+
+    return (
+        <div className="panel-wrapper" ref={ref}>
+            <div className="button" onClick={onClick} >
+                {props.name}
+            </div>
+            <div className="panel-inner">
+                {props.children}
+            </div>
+        </div>
+    );
 }

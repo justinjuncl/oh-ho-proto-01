@@ -6,6 +6,7 @@ import { TangleText } from "./TangleText";
 import { useStore, useTreeStore } from './Storage';
 
 import "./NodeEditor.css";
+import { Panel } from "./Panel";
 
 
 const nodeWidth = 122;
@@ -95,22 +96,10 @@ function NodeEditor_({ nodes, edges, ...props }) {
     const reactFlowStyle = {
         background: 'white'
     };
-    const divStyle = {
-        width: 400,
-        height: 400,
-        zIndex: 900,
-        bottom: 0,
-        right: 0,
-        position: 'absolute'
-    };
-
-    const nodeTypes = useMemo(
-        () => ({
-            T: TModuleNode,
-            R: RModuleNode,
-        }),
-        []
-    );
+    const nodeTypes = useMemo(() => ({
+        T: TModuleNode,
+        R: RModuleNode,
+    }), []);
 
     const setTreeData = useTreeStore(store => store.setTreeData);
 
@@ -135,12 +124,6 @@ function NodeEditor_({ nodes, edges, ...props }) {
         event.preventDefault();
         event.dataTransfer.dropEffect = 'move';
     }, []);
-
-    const onClick = useCallback(
-        () => {
-            reactFlowWrapper.current.classList.toggle('hide');
-        }, []
-    );
 
     const onNodesChange = useCallback(
         (changes) => {
@@ -218,26 +201,25 @@ function NodeEditor_({ nodes, edges, ...props }) {
     );
 
     return (
-        <div style={divStyle} className="reactflow-wrapper" ref={reactFlowWrapper}>
-            <button onClick={onClick} >
-                Node Editor
-            </button>
-            <ReactFlow
-                style={reactFlowStyle}
-                nodeTypes={nodeTypes}
-                defaultNodes={nodes}
-                defaultEdges={edges}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                onConnect={onConnect}
-                onDrop={onDrop}
-                onDragOver={onDragOver}
-                proOptions={{ account: 'paid-pro', hideAttribution: true }}
-            >
-                {/* <Controls /> */}
-            </ReactFlow>
-            <ModulesList />
-        </div>
+        <Panel name="Node Editor">
+            <div className="reactflow-wrapper" ref={reactFlowWrapper}>
+                <ReactFlow
+                    style={reactFlowStyle}
+                    nodeTypes={nodeTypes}
+                    defaultNodes={nodes}
+                    defaultEdges={edges}
+                    onNodesChange={onNodesChange}
+                    onEdgesChange={onEdgesChange}
+                    onConnect={onConnect}
+                    onDrop={onDrop}
+                    onDragOver={onDragOver}
+                    proOptions={{ account: 'paid-pro', hideAttribution: true }}
+                >
+                    {/* <Controls /> */}
+                </ReactFlow>
+                <ModulesList />
+            </div>
+        </Panel>
     );
 }
 

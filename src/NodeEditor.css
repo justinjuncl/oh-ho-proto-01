@@ -1,11 +1,3 @@
-.module-node-wrapper {
-    /* filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.25)); */
-}
-
-* {
-    font-family: Courier, serif;
-}
-
 .module-node {
     width: 122px;
     height: 76px;
@@ -98,18 +90,17 @@
 .module-node [data-handleid="source_4"] { left: 90%; }
 
 .reactflow-wrapper {
-    transform: translateY(0);
-    transition: transform 0.3s ease-in-out;
+    width: 100%;
+    height: 100%;
 }
 
-.reactflow-wrapper.hide {
-    transform: translateY(calc(100% - 22px));
+.react-flow {
+    background-color: rgba(0, 0, 0, 0.05) !important;
 }
 
 .modules-list {
     position: absolute;
-    top: 26px;
-    left: 6px;
+    top: 0;
     z-index: 4;
 }
 
