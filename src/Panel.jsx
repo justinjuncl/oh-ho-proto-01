@@ -1,6 +1,9 @@
 import { Children, forwardRef, useRef, useCallback } from "react";
 import "./Panel.css";
 
+const PANEL_WIDTH = 600;
+const PANEL_MARGIN = 18;
+
 export function Panel(props) {
     return props.children;
 }
@@ -12,12 +15,18 @@ const PanelTab = (props) => {
         () => {
             props.contentRef.classList.toggle('hide');
             buttonRef.current.classList.toggle('hide');
-            // console.log(props.contentRef.offsetWidth);
         }, [props.contentRef]
     );
 
-    const divStyle = {
+    let divStyle = {
         zIndex: props.index,
+        top: props.offset ? props.offset : 0
+    };
+
+    if (props.left) {
+        divStyle.right = `${PANEL_MARGIN * (props.index - props.length)}px`;
+    } else {
+        divStyle.left = `${PANEL_MARGIN * (props.index - 2)}px`;
     }
 
     return (
@@ -30,7 +39,7 @@ const PanelTab = (props) => {
 const PanelContent = forwardRef((props, ref) => {
     const divStyle = {
         zIndex: props.index,
-        height: props.height ? props.height : '100%',
+        width: PANEL_WIDTH,
     }
 
     return (
@@ -42,39 +51,42 @@ const PanelContent = forwardRef((props, ref) => {
     )
 });
 
-export function PanelList(props) {
+export function PanelList({ children, ...props }) {
     const contentRefs = useRef([]);
 
     return (
-        <div className="panel-list">
+        <div className={`panel-list ${props.left ? 'left' : ''}`} style={{ width: PANEL_MARGIN * (children.length ?? 1) }}>
             <>
                 {
-                    Children.map(props.children, (child, index) => {
-                        return (
-                            <PanelTab
-                                key={index}
-                                index={index}
-                                opened={child.props?.opened}
-                                contentRef={contentRefs.current[index]}
-                            >
-                                {child.props.name}
-                            </PanelTab>);
-                    })
-                }
-            </>
-            <>
-                {
-                    Children.map(props.children, (child, index) => {
+                    Children.map(children, (child, index) => {
                         return (
                             <PanelContent
                                 key={index}
                                 index={index}
                                 {...child.props}
+                                {...props}
                                 ref={el => contentRefs.current[index] = el}
                             >
                                 {child}
                             </PanelContent>
                         )
+                    })
+                }
+            </>
+            <>
+                {
+                    Children.map(children, (child, index) => {
+                        return (
+                            <PanelTab
+                                key={index}
+                                index={index}
+                                length={children.length}
+                                {...child.props}
+                                {...props}
+                                contentRef={contentRefs.current[index]}
+                            >
+                                {child.props.name}
+                            </PanelTab>);
                     })
                 }
             </>

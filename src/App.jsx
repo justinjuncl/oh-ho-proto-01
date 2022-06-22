@@ -17,12 +17,20 @@ const App = () => {
     return (
         <>
             <Scene storeColor={storeColor} />
-            <PanelList>
-                <Panel name="Debug" opened height="380px">
+            <PanelList offset={50}>
+                <Panel name="Debug" opened>
                     <OverlayEditor storeColor={storeColor} storeDebug={storeDebug} />
                 </Panel>
                 <Panel name="Node Editor">
                     <NodeEditor />
+                </Panel>
+            </PanelList>
+            <PanelList left>
+                <Panel name="Gallery">
+                    hi
+                </Panel>
+                <Panel name="About">
+                    hi
                 </Panel>
             </PanelList>
         </>

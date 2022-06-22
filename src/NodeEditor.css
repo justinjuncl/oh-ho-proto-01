@@ -95,12 +95,12 @@
 }
 
 .react-flow {
-    background-color: rgba(0, 0, 0, 0.05) !important;
+    background-color: unset !important;
 }
 
 .modules-list {
     position: absolute;
-    top: 0;
+    top: 18px;
     z-index: 4;
 }
 

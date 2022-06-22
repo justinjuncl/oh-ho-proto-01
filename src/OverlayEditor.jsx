@@ -82,16 +82,15 @@ export const OverlayEditor = ({ storeColor, storeDebug }) => {
                 zIndex: 100,
                 pointerEvents: 'none',
                 width: '100%',
-                padding: 10,
                 display: 'inline-flex',
-                gap: 10,
+                gap: 18,
                 alignItems: 'start'
             }}
         >
             <div
                 style={{
                     pointerEvents: 'auto',
-                    width: 300,
+                    width: 273,
                 }}
             >
                 <Leva fill />
@@ -100,7 +99,7 @@ export const OverlayEditor = ({ storeColor, storeDebug }) => {
             <div
                 style={{
                     pointerEvents: 'auto',
-                    width: 300,
+                    width: 273,
                 }}
             >
                 <LevaPanel store={storeColor} fill titleBar={false} />
