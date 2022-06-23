@@ -42,12 +42,14 @@ export const Scene = ({ storeColor, ...props }) => {
                 <LevaStoreProvider store={storeColor}>
                     <color attach="background" args={[background]} />
 
-                    <ambientLight intensity={0.3} />
-                    <pointLight position={[0, 20, 0]} intensity={1.5} />
+                    <ambientLight intensity={0.8}
+                    />
+                    <pointLight position={[20, 20, 0]} intensity={1.3}
+                    />
                     <directionalLight
-                        castShadow
                         position={[0, 20, 0]}
                         intensity={1.5}
+                        castShadow
                         shadow-mapSize-width={1024}
                         shadow-mapSize-height={1024}
                         shadow-camera-far={50}
