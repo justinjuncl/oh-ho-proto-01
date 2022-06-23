@@ -1,6 +1,6 @@
 import { Suspense } from "react"
 import { Canvas } from "@react-three/fiber";
-import { softShadows, OrbitControls } from "@react-three/drei";
+import { softShadows, OrbitControls, Environment } from "@react-three/drei";
 import { EffectComposer, Outline, Selection, Vignette } from "@react-three/postprocessing";
 
 import { LevaStoreProvider } from "leva";
@@ -38,30 +38,15 @@ export const Scene = ({ storeColor, ...props }) => {
             {/*         eskil={false} // Eskil's vignette technique */}
             {/*     /> */}
             {/* </EffectComposer> */}
+
             <Suspense fallback={null} >
+                <Environment background={false} near={1} far={1000} resolution={256} files={process.env.PUBLIC_URL + "/forest.hdr"} />
+                {/* <Environment background={false} near={1} far={1000} resolution={256} preset="forest" /> */}
                 <LevaStoreProvider store={storeColor}>
                     <color attach="background" args={[background]} />
 
-                    <ambientLight intensity={0.8}
-                    />
-                    <pointLight position={[20, 20, 0]} intensity={1.3}
-                    />
-                    <directionalLight
-                        position={[0, 20, 0]}
-                        intensity={1.5}
-                        castShadow
-                        shadow-mapSize-width={1024}
-                        shadow-mapSize-height={1024}
-                        shadow-camera-far={50}
-                        shadow-camera-left={-10}
-                        shadow-camera-right={10}
-                        shadow-camera-top={10}
-                        shadow-camera-bottom={-10}
-                    />
-
                     <group>
-                        {/* <group position={[0, 0.5, 0]} rotation={[0, 0, Math.PI]}> */}
-                        <group>
+                        <group position={[0, 3, 0]} rotation={[0, 0, Math.PI]}>
                             <ModuleTree root={tree} />
                         </group>
                         <gridHelper args={[100, 20, axis, grid]} position={[0, 0, 0]} />
@@ -69,7 +54,7 @@ export const Scene = ({ storeColor, ...props }) => {
                     <OrbitControls />
                 </LevaStoreProvider>
             </Suspense>
-        </Canvas>
+        </Canvas >
     );
 };
 

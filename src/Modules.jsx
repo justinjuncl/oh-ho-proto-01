@@ -1,4 +1,5 @@
-import React, { useRef, useState, useMemo, useEffect } from "react";
+import * as THREE from "three";
+import React, { useState, useMemo, useEffect } from "react";
 import { useStoreContext } from "leva";
 import { Edges, useGLTF, useAnimations } from "@react-three/drei";
 
