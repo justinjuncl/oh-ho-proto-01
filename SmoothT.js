@@ -12,19 +12,19 @@ export default function Model({ ...props }) {
   return (
     <group ref={group} {...props} dispose={null}>
       <group name="Scene">
-        <mesh name="u_head" geometry={nodes.u_head.geometry} material={nodes.u_head.material}>
-          <group name="f_0" position={[0, 2.5, 0]} />
-          <group name="f_1" position={[0.5, 2.5, 0]} rotation={[Math.PI, 0, -Math.PI / 2]} />
-          <group name="f_2" position={[0, 2.5, -0.5]} rotation={[-Math.PI / 2, -1.57, 0]} />
-          <group name="f_3" position={[-0.5, 2.5, 0]} rotation={[0, 0, Math.PI / 2]} />
-          <group name="f_4" position={[0, 2.5, 0.5]} rotation={[Math.PI / 2, 1.57, 0]} />
+        <mesh name="u_head" geometry={nodes.u_head.geometry} material={materials.YG}>
+          <group name="f_0" position={[0, 3.4, 0]} />
+          <group name="f_1" position={[1, 2.4, 0]} rotation={[Math.PI, 0, -Math.PI / 2]} />
+          <group name="f_2" position={[0, 2.4, -1]} rotation={[-Math.PI / 2, -Math.PI / 2, 0]} />
+          <group name="f_3" position={[-1, 2.4, 0]} rotation={[0, 0, Math.PI / 2]} />
+          <group name="f_4" position={[0, 2.4, 1]} rotation={[Math.PI / 2, Math.PI / 2, 0]} />
         </mesh>
-        <mesh name="u_base" geometry={nodes.u_base.geometry} material={nodes.u_base.material} />
-        <mesh name="Torus" geometry={nodes.Torus.geometry} material={nodes.Torus.material} />
-        <mesh name="Torus_bottom_001" geometry={nodes.Torus_bottom_001.geometry} material={nodes.Torus_bottom_001.material} scale={0} />
-        <mesh name="Torus_bottom_002" geometry={nodes.Torus_bottom_002.geometry} material={nodes.Torus_bottom_002.material} scale={0} />
-        <mesh name="Torus_bottom_003" geometry={nodes.Torus_bottom_003.geometry} material={nodes.Torus_bottom_003.material} scale={0} />
-        <mesh name="Torus_bottom_004" geometry={nodes.Torus_bottom_004.geometry} material={nodes.Torus_bottom_004.material} scale={0} />
+        <mesh name="joint" geometry={nodes.joint.geometry} material={materials.Material} scale={0.31} />
+        <mesh name="Torus" geometry={nodes.Torus.geometry} material={materials.YG} />
+        <mesh name="Torus_bottom_001" geometry={nodes.Torus_bottom_001.geometry} material={materials.YG} rotation={[-Math.PI, 0, -Math.PI]} scale={0} />
+        <mesh name="Torus_bottom_002" geometry={nodes.Torus_bottom_002.geometry} material={materials.YG} rotation={[-Math.PI, 0, -Math.PI]} scale={0} />
+        <mesh name="Torus_bottom_003" geometry={nodes.Torus_bottom_003.geometry} material={materials.YG} rotation={[-Math.PI, 0, -Math.PI]} scale={0} />
+        <mesh name="Torus_bottom_004" geometry={nodes.Torus_bottom_004.geometry} material={materials.YG} rotation={[-Math.PI, 0, -Math.PI]} scale={0} />
       </group>
     </group>
   )
