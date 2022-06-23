@@ -18,45 +18,22 @@ const closestParent = (group) => {
 const GLTF_MODEL = 'smooth';
 
 const getGltfFileName = (moduleType) => {
-    moduleType = 'T';
     return process.env.PUBLIC_URL + `/${GLTF_MODEL}${moduleType}.gltf`;
 }
 
-
 const ModuleR = ({ moduleType, ...props }) => {
     const gltfFileName = getGltfFileName(moduleType);
-    const { nodes, materials } = useGLTF(gltfFileName);
+    const { nodes, materials: _materials } = useGLTF(gltfFileName);
 
-    const material = useMemo(() => {
-        return materials.Material.clone();
-    }, [materials]);
-
-    return (
-        <>
-            {/* <mesh name="u_base" geometry={nodes.u_base.geometry} material={material} material-wireframe={true} position={[0, 0.5, 0]} /> */}
-            <mesh name="u_base" geometry={nodes.u_base.geometry} material={material} material-wireframe={false} material-color={props.color} position={[0, 0.5, 0]} />
-            <mesh name="u_pillar" geometry={nodes.u_pillar.geometry} material={material} position={[0, 1.5, 0]} />
-            <mesh name="u_head" geometry={nodes.u_head.geometry} material={material} position={[0, 2.5, 0]}>
-                {props.children}
-            </mesh>
-        </>
-    );
-};
-
-const ModuleT_ = ({ moduleType, ...props }) => {
-    const gltfFileName = getGltfFileName(moduleType);
-    const { nodes, materials } = useGLTF(gltfFileName);
-
-    const material = useMemo(() => {
-        return materials.Material.clone();
-    }, [materials]);
+    const [jointMaterial, baseMaterial] = useMemo(() => {
+        return [_materials.Material.clone(), _materials.YG.clone()];
+    }, [_materials]);
 
     return (
         <>
-            {/* <mesh name="u_base" geometry={nodes.u_base.geometry} material={material} material-wireframe={true} position={[0, 0.5, 0]} /> */}
-            <mesh name="u_base" geometry={nodes.u_base.geometry} material={material} material-wireframe={false} material-color={props.color} position={[0, 0.5, 0]} />
-            <mesh name="u_pillar" geometry={nodes.u_pillar.geometry} material={material} position={[0, 1.5, 0]} />
-            <mesh name="u_head" geometry={nodes.u_head.geometry} material={material} position={[0, 2.5, 0]}>
+            <mesh name="joint" geometry={nodes.joint.geometry} material={jointMaterial} scale={0.31} />
+            <mesh name="Torus" geometry={nodes.Torus.geometry} material={baseMaterial} material-color={props.color} />
+            <mesh name="u_head" geometry={nodes.u_head.geometry} material={baseMaterial}>
                 {props.children}
             </mesh>
         </>
@@ -65,26 +42,27 @@ const ModuleT_ = ({ moduleType, ...props }) => {
 
 const ModuleT = ({ moduleType, ...props }) => {
     const gltfFileName = getGltfFileName(moduleType);
-    const { nodes } = useGLTF(gltfFileName);
+    const { nodes, materials: _materials } = useGLTF(gltfFileName);
 
-    const material = useMemo(() => {
-        return nodes.Torus.material.clone();
-    }, [nodes.Torus.material]);
+    const [jointMaterial, baseMaterial] = useMemo(() => {
+        return [_materials.Material.clone(), _materials.YG.clone()];
+    }, [_materials]);
 
     return (
         <>
-            <mesh name="Torus" geometry={nodes.Torus.geometry} material={material} material-color={props.color} castShadow receiveShadow />
-            <mesh name="Torus_bottom_001" geometry={nodes.Torus_bottom_001.geometry} material={material} scale={0} castShadow receiveShadow />
-            <mesh name="Torus_bottom_002" geometry={nodes.Torus_bottom_002.geometry} material={material} scale={0} castShadow receiveShadow />
-            <mesh name="Torus_bottom_003" geometry={nodes.Torus_bottom_003.geometry} material={material} scale={0} castShadow receiveShadow />
-            <mesh name="Torus_bottom_004" geometry={nodes.Torus_bottom_004.geometry} material={material} scale={0} castShadow receiveShadow />
-            <mesh name="u_base" geometry={nodes.u_base.geometry} material={material} castShadow receiveShadow />
-            <mesh name="u_head" geometry={nodes.u_head.geometry} material={material} castShadow receiveShadow>
+            <mesh name="joint" geometry={nodes.joint.geometry} material={jointMaterial} scale={0.31} />
+            <mesh name="Torus" geometry={nodes.Torus.geometry} material={baseMaterial} material-color={props.color} />
+            <mesh name="Torus_bottom_001" geometry={nodes.Torus_bottom_001.geometry} material={baseMaterial} rotation={[-Math.PI, 0, -Math.PI]} scale={0} />
+            <mesh name="Torus_bottom_002" geometry={nodes.Torus_bottom_002.geometry} material={baseMaterial} rotation={[-Math.PI, 0, -Math.PI]} scale={0} />
+            <mesh name="Torus_bottom_003" geometry={nodes.Torus_bottom_003.geometry} material={baseMaterial} rotation={[-Math.PI, 0, -Math.PI]} scale={0} />
+            <mesh name="Torus_bottom_004" geometry={nodes.Torus_bottom_004.geometry} material={baseMaterial} rotation={[-Math.PI, 0, -Math.PI]} scale={0} />
+            <mesh name="u_head" geometry={nodes.u_head.geometry} material={baseMaterial}>
                 {props.children}
             </mesh>
         </>
     );
 };
+
 
 export const Module = ({ face, value, id, ...props }) => {
     const moduleType = props.moduleType;
@@ -143,7 +121,7 @@ export const Module = ({ face, value, id, ...props }) => {
         if (moduleType === 'T') {
             return <ModuleT color={color} {...props} />;
         } else {
-            return <ModuleT color={color} {...props} />;
+            return <ModuleR color={color} {...props} />;
         }
     }, [moduleType, color, props]);
 
@@ -183,9 +161,6 @@ export const ModuleTree = ({ root }) => {
         </Module>
     );
 }
-
-useGLTF.preload(process.env.PUBLIC_URL + '/basicR.gltf');
-useGLTF.preload(process.env.PUBLIC_URL + '/basicT.gltf');
 
 useGLTF.preload(process.env.PUBLIC_URL + '/smoothT.gltf');
 useGLTF.preload(process.env.PUBLIC_URL + '/smoothR.gltf');

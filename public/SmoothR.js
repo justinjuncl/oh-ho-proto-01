@@ -7,7 +7,7 @@ import { useGLTF, useAnimations } from '@react-three/drei'
 
 export default function Model({ ...props }) {
   const group = useRef()
-  const { nodes, materials, animations } = useGLTF('/smoothT.gltf')
+  const { nodes, materials, animations } = useGLTF('/smoothR.gltf')
   const { actions } = useAnimations(animations, group)
   return (
     <group ref={group} {...props} dispose={null}>
@@ -21,13 +21,9 @@ export default function Model({ ...props }) {
         </mesh>
         <mesh name="joint" geometry={nodes.joint.geometry} material={materials.Material} scale={0.31} />
         <mesh name="Torus" geometry={nodes.Torus.geometry} material={materials.YG} />
-        <mesh name="Torus_bottom_001" geometry={nodes.Torus_bottom_001.geometry} material={materials.YG} rotation={[-Math.PI, 0, -Math.PI]} scale={0} />
-        <mesh name="Torus_bottom_002" geometry={nodes.Torus_bottom_002.geometry} material={materials.YG} rotation={[-Math.PI, 0, -Math.PI]} scale={0} />
-        <mesh name="Torus_bottom_003" geometry={nodes.Torus_bottom_003.geometry} material={materials.YG} rotation={[-Math.PI, 0, -Math.PI]} scale={0} />
-        <mesh name="Torus_bottom_004" geometry={nodes.Torus_bottom_004.geometry} material={materials.YG} rotation={[-Math.PI, 0, -Math.PI]} scale={0} />
       </group>
     </group>
   )
 }
 
-useGLTF.preload('/smoothT.gltf')
+useGLTF.preload('/smoothR.gltf')
