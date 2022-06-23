@@ -127,6 +127,7 @@ function NodeEditor_({ nodes, edges, ...props }) {
 
     const onNodesChange = useCallback(
         (changes) => {
+            let selected = false;
             for (const change of changes) {
                 if (change.type === 'select') {
                     if (change.selected) {
@@ -136,8 +137,11 @@ function NodeEditor_({ nodes, edges, ...props }) {
                             },
                             face: {}
                         });
+                        selected = true;
                     } else {
-                        setSelection({});
+                        if (!selected) {
+                            setSelection({});
+                        }
                     }
                 }
             }
