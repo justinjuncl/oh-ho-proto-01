@@ -1,4 +1,4 @@
-import { Children, forwardRef, useRef, useCallback } from "react";
+import { Children, forwardRef, useEffect, useRef, useCallback } from "react";
 import "./Panel.css";
 
 const PANEL_WIDTH = 600;
@@ -13,9 +13,9 @@ const PanelTab = (props) => {
 
     const onClick = useCallback(
         () => {
-            props.contentRef.classList.toggle('hide');
+            props.contentRefs[props.index].classList.toggle('hide');
             buttonRef.current.classList.toggle('hide');
-        }, [props.contentRef]
+        }, [props.contentRefs, props.index, buttonRef]
     );
 
     let divStyle = {
@@ -54,6 +54,10 @@ const PanelContent = forwardRef((props, ref) => {
 export function PanelList({ children, ...props }) {
     const contentRefs = useRef([]);
 
+    useEffect(() => {
+        contentRefs.current = contentRefs.current.slice(0, children.length);
+    }, [children]);
+
     return (
         <div className={`panel-list ${props.left ? 'left' : ''}`} style={{ width: PANEL_MARGIN * (children.length ?? 1) }}>
             <>
@@ -83,7 +87,7 @@ export function PanelList({ children, ...props }) {
                                 length={children.length}
                                 {...child.props}
                                 {...props}
-                                contentRef={contentRefs.current[index]}
+                                contentRefs={contentRefs.current}
                             >
                                 {child.props.name}
                             </PanelTab>);

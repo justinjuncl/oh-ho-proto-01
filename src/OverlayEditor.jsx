@@ -4,7 +4,6 @@ import { useControls } from "leva";
 import { useStore, useTreeStore, useLocalStorage, download, exampleColor } from "./Storage";
 import { Leva, LevaPanel, button } from "leva";
 
-
 export const useOverlayEditor = (storeColor, storeDebug) => {
     const moduleSelection = useStore(store => store.selection);
     const treeData = useTreeStore(store => store.treeData);
@@ -19,7 +18,7 @@ export const useOverlayEditor = (storeColor, storeDebug) => {
         }
     }), { store: storeDebug }, [moduleSelection]);
 
-    const [color,] = useControls(() => ({
+    const [color, setColorControls] = useControls(() => ({
         background: colorData.background,
         axis: colorData.axis,
         grid: colorData.grid,
@@ -60,17 +59,24 @@ export const useOverlayEditor = (storeColor, storeDebug) => {
                 });
 
                 const result = JSON.parse(reader.result);
-                setColorData(result.color);
-                setTreeData(result.tree);
+
+                if (result.color) {
+                    setColorControls(result.color);
+                    setColorData(result.color);
+                }
+                if (result.tree) {
+                    setTreeData(result.tree);
+                }
             }
 
             reader.readAsText(userLoadedTreeJSON);
         }
-    }, [userLoadedTreeJSON, setColorData, setTreeData, setUserLoadedTreeJSON]);
+    }, [userLoadedTreeJSON, setColorControls, setColorData, setTreeData, setUserLoadedTreeJSON]);
 
     useLayoutEffect(() => {
         setColorData(color);
     }, [color, setColorData]);
+
 }
 
 

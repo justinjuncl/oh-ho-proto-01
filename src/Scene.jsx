@@ -1,6 +1,6 @@
 import { Suspense } from "react"
 import { Canvas } from "@react-three/fiber";
-import { softShadows, OrbitControls, Environment } from "@react-three/drei";
+import { softShadows, OrbitControls, Environment, useGLTF } from "@react-three/drei";
 import { EffectComposer, Outline, Selection, Vignette } from "@react-three/postprocessing";
 
 import { LevaStoreProvider } from "leva";
@@ -10,10 +10,20 @@ import { ModuleTree } from "./Modules";
 
 softShadows();
 
+export default function Ball({ ...props }) {
+    const { nodes, materials } = useGLTF(process.env.PUBLIC_URL + '/ball.gltf')
+
+    return (
+        <group {...props} dispose={null}>
+            <mesh geometry={nodes.Ball.geometry} material={materials.brown_mud_leaves_01} scale={3} position={[0, 3, 0]} />
+        </group>
+    )
+}
+
 
 export const Scene = ({ storeColor, ...props }) => {
     const background = storeColor.get('background');
-    const axis = storeColor.get('axix');
+    const axis = storeColor.get('axis');
     const grid = storeColor.get('grid');
 
     const tree = useTreeStore(store => store.treeData);
@@ -46,7 +56,8 @@ export const Scene = ({ storeColor, ...props }) => {
                     <color attach="background" args={[background]} />
 
                     <group>
-                        <group position={[0, 3, 0]} rotation={[0, 0, Math.PI]}>
+                        <Ball />
+                        <group position={[0, 3.5, 0]} rotation={[0, 0, Math.PI]}>
                             <ModuleTree root={tree} />
                         </group>
                         <gridHelper args={[100, 20, axis, grid]} position={[0, 0, 0]} />
@@ -58,3 +69,4 @@ export const Scene = ({ storeColor, ...props }) => {
     );
 };
 
+useGLTF.preload('/ball.gltf')
