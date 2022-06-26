@@ -11,11 +11,11 @@ import { ModuleTree } from "./Modules";
 softShadows();
 
 export default function Ball({ ...props }) {
-    const { nodes, materials } = useGLTF(process.env.PUBLIC_URL + '/ball.gltf')
+    const { nodes, materials } = useGLTF(process.env.PUBLIC_URL + '/ball_palm.gltf')
 
     return (
-        <group {...props} dispose={null}>
-            <mesh geometry={nodes.Ball.geometry} material={materials.brown_mud_leaves_01} scale={3} position={[0, 3, 0]} />
+        <group {...props} dispose={null} scale={3} position={[0, 2, 0]}>
+            <mesh geometry={nodes.Sphere.geometry} material={materials.palm_tree_bark} />
         </group>
     )
 }
