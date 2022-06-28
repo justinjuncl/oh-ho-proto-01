@@ -5,6 +5,7 @@ import { useOverlayEditor, OverlayEditor } from "./OverlayEditor";
 import { Scene } from "./Scene";
 
 import "./App.css";
+import { Logo } from "./Logo";
 import { Panel, PanelList } from "./Panel";
 
 
@@ -17,6 +18,7 @@ const App = () => {
     return (
         <>
             <Scene storeColor={storeColor} />
+            <Logo />
             <PanelList offset={50}>
                 <Panel name="Debug" opened>
                     <OverlayEditor storeColor={storeColor} storeDebug={storeDebug} />
