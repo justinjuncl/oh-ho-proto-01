@@ -20,19 +20,19 @@ const App = () => {
             <Scene storeColor={storeColor} />
             <Logo />
             <PanelList offset={50}>
-                <Panel name="Debug" opened>
+                <Panel name="Debug">
                     <OverlayEditor storeColor={storeColor} storeDebug={storeDebug} />
                 </Panel>
-                <Panel name="Node Editor">
-                    <NodeEditor />
+                <Panel name="Node Editor" opened>
+                    <NodeEditor storeColor={storeColor} />
                 </Panel>
             </PanelList>
             <PanelList left>
                 <Panel name="Gallery">
-                    hi
+                    <div style={{ textAlign: 'center', padding: '100% 0', fontStyle: 'italic' }}>Coming soon</div>
                 </Panel>
                 <Panel name="About">
-                    hi
+                    <div style={{ textAlign: 'center', padding: '100% 0', fontStyle: 'italic' }}>Coming soon</div>
                 </Panel>
             </PanelList>
         </>

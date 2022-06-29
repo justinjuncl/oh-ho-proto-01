@@ -1,3 +1,8 @@
+:root {
+    --highlight-t-color: #eee;
+    --highlight-r-color: #eee;
+}
+
 .module-node {
     width: 122px;
     height: 76px;
@@ -7,10 +12,21 @@
     background: white;
     font-size: 11px;
     z-index: initial;
+    box-shadow: unset;
 }
 
-.selected .module-node {
-    background-color: #eee;
+.react-flow__node-T.selected .module-node {
+    box-shadow: 0 0 10px 5px var(--highlight-t-color);
+}
+.react-flow__node-R.selected .module-node {
+    box-shadow: 0 0 10px 5px var(--highlight-r-color);
+}
+
+.react-flow__node-T .module-node.drag-hover {
+    box-shadow: 0 0 10px 5px var(--highlight-t-color);
+}
+.react-flow__node-R .module-node.drag-hover {
+    box-shadow: 0 0 10px 5px var(--highlight-r-color);
 }
 
 .module-node h1 {
@@ -75,7 +91,7 @@
     width: 54px;
     text-align: left;
     display: inline-block;
-    color: #777;
+    color: #000;
     font-size: 12px;
     padding-left: 10px;
 }
@@ -112,5 +128,9 @@
     margin: 5px;
     padding: 10px;
     background-color: #fff;
-    cursor: pointer;
+    -webkit-user-drag: element;
+}
+
+[draggable=true] {
+  cursor: move;
 }

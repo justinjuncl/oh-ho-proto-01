@@ -1,12 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef } from "react"
-import ReactFlow, { Handle, Position, Controls, ReactFlowProvider, useReactFlow, applyNodeChanges } from 'react-flow-renderer';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import ReactFlow, { Handle, Position, ReactFlowProvider, useReactFlow, applyNodeChanges, applyEdgeChanges } from 'react-flow-renderer';
 import dagre from 'dagre';
 import { TangleText } from "./TangleText";
 
 import { useStore, useTreeStore } from './Storage';
 
 import "./NodeEditor.css";
-import { Panel } from "./Panel";
 
 
 const nodeWidth = 122;
@@ -41,9 +40,31 @@ function BaseModuleNode({ data }) {
         [data.label, reactFlowInstance, setTreeData]
     );
 
+    const [dragTarget, setDragTarget] = useState(null);
+    const [dragHover, setDragHover] = useState(false);
+
     return (
-        <div className="module-node-wrapper">
-            <div className="module-node">
+        <div className="module-node-wrapper"
+            onDragEnter={(event) => {
+                event.stopPropagation();
+                event.preventDefault();
+                setDragTarget(event.target);
+                setDragHover(true);
+                return false;
+            }}
+            onDragLeave={(event) => {
+                if (dragTarget === event.target) {
+                    event.stopPropagation();
+                    event.preventDefault();
+                    setDragHover(false);
+                }
+            }}
+            onDrop={(event) => {
+                setDragHover(false);
+            }}
+        >
+            <div className={`module-node ${dragHover ? 'drag-hover' : ''}`}
+            >
                 <Handle type="target" position={Position.Top} id="target_face" />
                 <Handle type="target" position={Position.Left} id="target_value" />
                 <div className="module-node-inner">
@@ -75,17 +96,28 @@ function TModuleNode({ data }) { return <BaseModuleNode data={data} /> }
 function RModuleNode({ data }) { return <BaseModuleNode data={data} /> }
 
 function ModulesList() {
+    const [ghost, setGhost] = useState(null);
+
     const onDragStart = (event, nodeType) => {
         event.dataTransfer.setData('application/reactflow', nodeType);
         event.dataTransfer.effectAllowed = 'move';
+
+        const ghost = document.getElementsByClassName(`modules-list-item-${nodeType}`)[0].cloneNode(true);
+        // const ghost = document.getElementsByClassName("module-node")[0].cloneNode(true);
+        ghost.style.position = "absolute";
+        ghost.style.top = "10px";
+        ghost.style.right = "10px";
+        ghost.style.zIndex = -1;
+        document.body.appendChild(ghost);
+        event.dataTransfer.setDragImage(ghost, 0, 0);
     };
 
     return (
         <div className="modules-list">
-            <div className="modules-list-item" onDragStart={(event) => onDragStart(event, 'T')} draggable>
+            <div className="modules-list-item modules-list-item-T" onDragStart={(event) => onDragStart(event, 'T')} draggable>
                 T Module
             </div>
-            <div className="modules-list-item" onDragStart={(event) => onDragStart(event, 'R')} draggable>
+            <div className="modules-list-item modules-list-item-R" onDragStart={(event) => onDragStart(event, 'R')} draggable>
                 R Module
             </div>
         </div>
@@ -119,11 +151,6 @@ function NodeEditor_({ nodes, edges, ...props }) {
             reactFlowInstance.setNodes((nodes) => applyNodeChanges(changes, nodes));
         }
     }, [reactFlowInstance, selection?.object?.name]);
-
-    const onDragOver = useCallback((event) => {
-        event.preventDefault();
-        event.dataTransfer.dropEffect = 'move';
-    }, []);
 
     const onNodesChange = useCallback(
         (changes) => {
@@ -162,9 +189,23 @@ function NodeEditor_({ nodes, edges, ...props }) {
     );
 
     const onConnect = useCallback(
-        (changes) => {
+        (edge) => {
+            const source = edge.source;
+            const sourceHandle = edge.sourceHandle;
+            const target = edge.target;
+            let edges = reactFlowInstance.getEdges();
+
+            const changes = [];
+            edges.forEach(_edge => {
+                if ((_edge.source === source && _edge.sourceHandle === sourceHandle) ^
+                    (_edge.target === target)) {
+                    changes.push({ id: _edge.id, type: "remove" });
+                }
+            });
+            reactFlowInstance.setEdges((edges) => applyNodeChanges(changes, edges));
+
             const nodes = reactFlowInstance.getNodes();
-            const edges = reactFlowInstance.getEdges();
+            edges = reactFlowInstance.getEdges();
             const tree = getTreeFromNodesEdges(nodes, edges);
             setTreeData(tree);
         },
@@ -178,31 +219,56 @@ function NodeEditor_({ nodes, edges, ...props }) {
             const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
             const type = event.dataTransfer.getData('application/reactflow');
 
+            const targetNode = event.target?.closest(".react-flow__node")?.getAttribute("data-id");
+
             if (typeof type === 'undefined' || !type) {
                 return;
             }
 
-            const position = reactFlowInstance.project({
-                x: event.clientX - reactFlowBounds.left - nodeWidth / 2,
-                y: event.clientY - reactFlowBounds.top - nodeHeight / 2,
-            });
-            const newId = getId(reactFlowInstance.getNodes());
+            if (targetNode) {
+                reactFlowInstance.setNodes((nodes) => (
+                    nodes.map(node => {
+                        const newNode = { ...node };
+                        if (node.id === targetNode && node.type !== type) {
+                            newNode.type = type;
+                            newNode.data.moduleType = type;
+                        }
+                        return newNode;
+                    })
+                ));
 
-            const newNode = {
-                id: `${newId}`,
-                data: {
-                    label: `Module_${newId}`,
-                    value: 0,
-                    moduleType: type
-                },
-                position,
-                type,
-            };
+                const nodes = reactFlowInstance.getNodes();
+                const edges = reactFlowInstance.getEdges();
+                const tree = getTreeFromNodesEdges(nodes, edges);
+                setTreeData(tree);
+            } else {
+                const position = reactFlowInstance.project({
+                    x: event.clientX - reactFlowBounds.left - nodeWidth / 2,
+                    y: event.clientY - reactFlowBounds.top - nodeHeight / 2,
+                });
+                const newId = getId(reactFlowInstance.getNodes());
 
-            reactFlowInstance.setNodes((nds) => nds.concat(newNode));
+                const newNode = {
+                    id: `${newId}`,
+                    data: {
+                        label: `Module_${newId}`,
+                        value: 0,
+                        moduleType: type
+                    },
+                    position,
+                    type,
+                };
+
+                reactFlowInstance.setNodes((nodes) => nodes.concat(newNode));
+            }
         },
-        [reactFlowInstance]
+        [reactFlowInstance, setTreeData]
     );
+
+    const onDragOver = useCallback((event) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+    }, []);
 
     return (
         <div className="reactflow-wrapper" ref={reactFlowWrapper}>
@@ -218,7 +284,6 @@ function NodeEditor_({ nodes, edges, ...props }) {
                 onDragOver={onDragOver}
                 proOptions={{ account: 'paid-pro', hideAttribution: true }}
             >
-                {/* <Controls /> */}
             </ReactFlow>
             <ModulesList />
         </div>
@@ -356,7 +421,21 @@ function getTreeFromNodesEdges(nodes, edges) {
     return roots[0];
 }
 
-export function NodeEditor(props) {
+function setHighlightColor(color, moduleType) {
+    [...document.getElementsByClassName('react-flow__renderer')].forEach((el) => {
+        el.style.setProperty(`--highlight-${moduleType}-color`, color);
+    });
+}
+
+export function NodeEditor({ storeColor, ...props }) {
+    const color_T_highlight = storeColor.get('T_highlight');
+    const color_R_highlight = storeColor.get('R_highlight');
+
+    useEffect(() => {
+        setHighlightColor(color_T_highlight, 't');
+        setHighlightColor(color_R_highlight, 'r');
+    }, [color_T_highlight, color_R_highlight]);
+
     const tree = useTreeStore(store => store.treeData);
     let [nodes, edges] = getNodesEdgesFromTree(tree);
     [nodes, edges] = getLayoutedElements(nodes, edges);
