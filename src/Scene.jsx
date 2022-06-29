@@ -68,5 +68,3 @@ export const Scene = ({ storeColor, ...props }) => {
         </Canvas >
     );
 };
-
-useGLTF.preload('/ball.gltf')

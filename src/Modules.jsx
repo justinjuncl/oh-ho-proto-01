@@ -83,7 +83,6 @@ export const Module = ({ face, value, id, ...props }) => {
             actions[name].paused = false;
         }
 
-        console.log(value);
         mixer.setTime(value * 0.99999);
 
         for (const name of Object.keys(actions)) {
