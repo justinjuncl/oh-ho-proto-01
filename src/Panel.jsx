@@ -15,8 +15,8 @@ const PanelTab = (props) => {
 
     const onClick = useCallback(
         () => {
-            props.contentRefs[props.index].classList.toggle('hide');
-            buttonRef.current.classList.toggle('hide');
+            props.contentRefs[props.index].classList.toggle("hide");
+            buttonRef.current.classList.toggle("hide");
         }, [props.contentRefs, props.index, buttonRef]
     );
 

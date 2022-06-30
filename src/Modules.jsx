@@ -3,7 +3,7 @@ import { useStoreContext } from "leva";
 import { Edges, useGLTF, useAnimations } from "@react-three/drei";
 
 import { useStore } from "Storage";
-import { lerpColor, getColor } from "utils"
+import { lerpColor } from "utils";
 
 import MODULE_R from "assets/moduleR.gltf";
 import MODULE_T from "assets/moduleT.gltf";
@@ -18,14 +18,14 @@ const closestParent = (group) => {
 };
 
 const getGltfFileName = (moduleType) => {
-    if (moduleType === 'T') {
+    if (moduleType === "T") {
         return MODULE_T;
     }
     return MODULE_R;
 }
 
-const ModuleR = ({ moduleType, ...props }) => {
-    const gltfFileName = getGltfFileName(moduleType);
+const ModuleR = (props) => {
+    const gltfFileName = getGltfFileName("R");
     const { nodes, materials: _materials } = useGLTF(gltfFileName);
 
     const [jointMaterial, baseMaterial] = useMemo(() => {
@@ -43,8 +43,8 @@ const ModuleR = ({ moduleType, ...props }) => {
     );
 };
 
-const ModuleT = ({ moduleType, ...props }) => {
-    const gltfFileName = getGltfFileName(moduleType);
+const ModuleT = (props) => {
+    const gltfFileName = getGltfFileName("T");
     const { nodes, materials: _materials } = useGLTF(gltfFileName);
 
     const [jointMaterial, baseMaterial] = useMemo(() => {
@@ -67,10 +67,8 @@ const ModuleT = ({ moduleType, ...props }) => {
 };
 
 
-export const Module = ({ face, value, id, ...props }) => {
-    const moduleType = props.moduleType;
+export const Module = ({ moduleType, face, value, id, ...props }) => {
     const gltfFileName = getGltfFileName(moduleType);
-
     const { nodes, animations } = useGLTF(gltfFileName);
     const { ref, actions, mixer } = useAnimations(animations);
 
@@ -94,34 +92,39 @@ export const Module = ({ face, value, id, ...props }) => {
     }, [value, actions, mixer]);
 
     const [offset_pos_rot, normal_to_face] = useMemo(() => {
-        let off = {};
-        let nor = {};
+        const offset_pos_rot = {};
+        const normal_to_face = {};
         for (const [key, val] of Object.entries(nodes)) {
             if (key.includes('f_')) {
-                off[key] = { position: val.position, rotation: val.rotation };
-                nor[val.position.clone().normalize().toArray()] = key;
+                offset_pos_rot[key] = { position: val.position, rotation: val.rotation };
+                normal_to_face[val.position.clone().normalize().toArray()] = key;
             }
         }
-        return [off, nor];
+        return [offset_pos_rot, normal_to_face];
     }, [nodes]);
 
     const selection = useStore(store => store.selection);
     const setSelection = useStore(store => store.setSelection);
 
     const store = useStoreContext();
-    const startColor = store.get(moduleType + '_start');
-    const endColor = store.get(moduleType + '_end');
-    const highlightColor = store.get(moduleType + '_highlight');
+    const startColor = store.get(moduleType + "_start");
+    const endColor = store.get(moduleType + "_end");
+    const highlightColor = store.get(moduleType + "_highlight");
 
-    const name = 'Module_' + id;
-    const offset = offset_pos_rot['f_' + face];
+    const name = "Module_" + id;
+    const offset = offset_pos_rot["f_" + face];
 
-    const activated = selection?.object?.name === name;
+    const selected = selection?.object?.name === name;
     const [rnd] = useState(() => Math.random() * 0.8 + 0.2);
-    const color = useMemo(() => activated ? getColor(highlightColor, rnd) : lerpColor(startColor, endColor, rnd), [activated, rnd, startColor, endColor, highlightColor]);
+    const color = useMemo(() =>
+        selected
+            ? lerpColor(lerpColor(startColor, endColor, rnd), highlightColor, 0.8)
+            : lerpColor(startColor, endColor, rnd),
+        [selected, rnd, startColor, endColor, highlightColor]
+    );
 
     const mesh = useMemo(() => {
-        if (moduleType === 'T') {
+        if (moduleType === "T") {
             return <ModuleT color={color} {...props} />;
         } else {
             return <ModuleR color={color} {...props} />;
@@ -140,7 +143,7 @@ export const Module = ({ face, value, id, ...props }) => {
 
             onClick={(e) => {
                 e.stopPropagation();
-                if (!activated) {
+                if (!selected) {
                     setSelection({
                         object: closestParent(e.object),
                         face: normal_to_face[e.face.normal.toArray()]
@@ -155,11 +158,11 @@ export const Module = ({ face, value, id, ...props }) => {
     );
 }
 
-export const ModuleTree = ({ root }) => {
+export const ModuleTree = ({ node }) => {
     return (
-        <Module moduleType={root.moduleType} face={root.face} value={root.value} id={root.id}>
-            {root.children.map(child => (
-                <ModuleTree key={child.id} root={child} />
+        <Module moduleType={node.moduleType} face={node.face} value={node.value} id={node.id}>
+            {node.children.map(child => (
+                <ModuleTree key={child.id} node={child} />
             ))}
         </Module>
     );

@@ -5,29 +5,29 @@ import { persist } from "zustand/middleware";
 export const exampleTree = {
     id: 0,
     face: 0,
-    moduleType: 'T',
+    moduleType: "T",
     value: 0,
     children: [{
         id: 15,
         face: 2,
-        moduleType: 'R',
+        moduleType: "R",
         value: 0,
         children: [{
             id: 25,
             face: 1,
-            moduleType: 'R',
+            moduleType: "R",
             value: 0,
             children: [],
         }],
     }, {
         id: 16,
         face: 3,
-        moduleType: 'R',
+        moduleType: "R",
         value: 0,
         children: [{
             id: 26,
             face: 1,
-            moduleType: 'R',
+            moduleType: "R",
             value: 0,
             children: [],
         }],
@@ -36,15 +36,15 @@ export const exampleTree = {
 };
 
 export const exampleColor = {
-    background: '#111111',
-    axis: '#151515',
-    grid: '#060606',
-    T_start: '#85AA85',
-    T_end: '#384938',
-    T_highlight: '#282cce',
-    R_start: '#85AA85',
-    R_end: '#384938',
-    R_highlight: '#e5851b',
+    background: "#111111",
+    axis: "#151515",
+    grid: "#060606",
+    T_start: "#85AA85",
+    T_end: "#384938",
+    T_highlight: "#282cce",
+    R_start: "#85AA85",
+    R_end: "#384938",
+    R_highlight: "#e5851b",
 };
 
 // https://www.30secondsofcode.org/react/s/use-local-storage
@@ -89,12 +89,12 @@ export const useTreeStore = create(persist(
 ))
 
 export function download(data, filename, type) {
-    if (type.includes('json')) {
+    if (type.includes("json")) {
         data = JSON.stringify(data, null, 2);
     }
 
     let file = new Blob([data], { type: type });
-    let a = document.createElement('a');
+    let a = document.createElement("a");
     let url = URL.createObjectURL(file);
 
     a.href = url;

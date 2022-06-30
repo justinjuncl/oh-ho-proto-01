@@ -25,9 +25,9 @@ export default function Ball({ ...props }) {
 
 
 export const Scene = ({ storeColor, ...props }) => {
-    const background = storeColor.get('background');
-    const axis = storeColor.get('axis');
-    const grid = storeColor.get('grid');
+    const background = storeColor.get("background");
+    const axis = storeColor.get("axis");
+    const grid = storeColor.get("grid");
 
     const tree = useTreeStore(store => store.treeData);
     const setSelection = useStore(store => store.setSelection);
@@ -60,7 +60,7 @@ export const Scene = ({ storeColor, ...props }) => {
                     <group>
                         <Ball />
                         <group position={[0, 3.5, 0]} rotation={[0, 0, Math.PI]}>
-                            <ModuleTree root={tree} />
+                            <ModuleTree node={tree} />
                         </group>
                         <gridHelper args={[100, 20, axis, grid]} position={[0, 0, 0]} />
                     </group>

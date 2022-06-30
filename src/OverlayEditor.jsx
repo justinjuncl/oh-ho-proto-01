@@ -32,11 +32,11 @@ export const useOverlayEditor = (storeColor, storeDebug) => {
 
     const [{ userLoadedTreeJSON }, setUserLoadedTreeJSON] = useControls(() => ({
         userLoadedTreeJSON: {
-            label: 'Load JSON',
+            label: "Load JSON",
             image: undefined
         },
-        'Export JSON': button(() => {
-            download({ tree: treeData, color }, 'export.json', 'application/json');
+        "Export JSON": button(() => {
+            download({ tree: treeData, color }, "export.json", "application/json");
         }),
     }), { store: storeColor }, [treeData, color]);
 
@@ -84,18 +84,18 @@ export const OverlayEditor = ({ storeColor, storeDebug }) => {
     return (
         <div
             style={{
-                position: 'fixed',
+                position: "fixed",
                 zIndex: 100,
-                pointerEvents: 'none',
-                width: '100%',
-                display: 'inline-flex',
+                pointerEvents: "none",
+                width: "100%",
+                display: "inline-flex",
                 gap: 18,
-                alignItems: 'start'
+                alignItems: "start"
             }}
         >
             <div
                 style={{
-                    pointerEvents: 'auto',
+                    pointerEvents: "auto",
                     width: 273,
                 }}
             >
@@ -104,7 +104,7 @@ export const OverlayEditor = ({ storeColor, storeDebug }) => {
             </div>
             <div
                 style={{
-                    pointerEvents: 'auto',
+                    pointerEvents: "auto",
                     width: 273,
                 }}
             >

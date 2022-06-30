@@ -29,10 +29,10 @@ const App = () => {
             </PanelList>
             <PanelList left>
                 <Panel name="Gallery">
-                    <div style={{ textAlign: 'center', padding: '100% 0', fontStyle: 'italic' }}>Coming soon</div>
+                    <div style={{ textAlign: "center", padding: "100% 0", fontStyle: "italic" }}>Coming soon</div>
                 </Panel>
                 <Panel name="About">
-                    <div style={{ textAlign: 'center', padding: '100% 0', fontStyle: 'italic' }}>Coming soon</div>
+                    <div style={{ textAlign: "center", padding: "100% 0", fontStyle: "italic" }}>Coming soon</div>
                 </Panel>
             </PanelList>
         </>

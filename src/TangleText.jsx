@@ -1,5 +1,5 @@
-import React from 'react';
-import PropTypes from 'prop-types';
+import React from "react";
+import PropTypes from "prop-types";
 
 
 export class TangleText extends React.Component {
@@ -9,7 +9,7 @@ export class TangleText extends React.Component {
         step: 1,
         decimals: 2,
         pixelDistance: 6,
-        className: 'react-tangle-input',
+        className: "react-tangle-input",
         format: function(x) { return x; },
         onInput: function() { }
     };
@@ -98,15 +98,15 @@ export class TangleText extends React.Component {
         this.startX = e.screenX;
         this.startValue = this.state.value;
 
-        window.addEventListener('mousemove', this.onMouseMove);
-        window.addEventListener('mouseup', this.onMouseUp);
+        window.addEventListener("mousemove", this.onMouseMove);
+        window.addEventListener("mouseup", this.onMouseUp);
     }
 
     onMouseUp = (e) => {
         if (this.state.isMouseDown) {
             e.preventDefault();
-            window.removeEventListener('mousemove', this.onMouseMove);
-            window.removeEventListener('mouseup', this.onMouseUp);
+            window.removeEventListener("mousemove", this.onMouseMove);
+            window.removeEventListener("mouseup", this.onMouseUp);
             if (this.dragged) this.onBlur();
             this.setState({ isMouseDown: false });
         }
@@ -136,7 +136,7 @@ export class TangleText extends React.Component {
                 className={this.props.className}
                 disabled={this.props.disabled}
                 readOnly={this.state.isReadOnly}
-                type='text'
+                type="text"
                 onChange={this.onChange}
                 onMouseDown={this.onMouseDown}
                 onKeyDown={this.onKeyDown}

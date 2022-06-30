@@ -49,10 +49,21 @@ export const getColor = (color, val) => {
 }
 
 export const lerpColor = (start, end, amount) => {
-    const a = parseInt(start.replace(/^#/, ''), 16),
-        b = parseInt(end.replace(/^#/, ''), 16),
+    let a, b;
 
-        ar = (a & 0xFF0000) >> 16,
+    if (typeof start === "number") {
+        a = start;
+    } else {
+        a = parseInt(start.replace(/^#/, ''), 16);
+    }
+
+    if (typeof end === "number") {
+        b = end;
+    } else {
+        b = parseInt(end.replace(/^#/, ''), 16);
+    }
+
+    const ar = (a & 0xFF0000) >> 16,
         ag = (a & 0x00FF00) >> 8,
         ab = (a & 0x0000FF),
 
