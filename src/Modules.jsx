@@ -95,7 +95,7 @@ export const Module = ({ moduleType, face, value, id, ...props }) => {
         const offset_pos_rot = {};
         const normal_to_face = {};
         for (const [key, val] of Object.entries(nodes)) {
-            if (key.includes('f_')) {
+            if (key.includes("f_")) {
                 offset_pos_rot[key] = { position: val.position, rotation: val.rotation };
                 normal_to_face[val.position.clone().normalize().toArray()] = key;
             }

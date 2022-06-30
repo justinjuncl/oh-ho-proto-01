@@ -219,7 +219,7 @@ function NodeEditor_({ nodes, edges, ...props }) {
             event.preventDefault();
 
             const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
-            const type = event.dataTransfer.getData('application/reactflow');
+            const type = event.dataTransfer.getData("application/reactflow");
 
             const targetNode = event.target?.closest(".react-flow__node")?.getAttribute("data-id");
 
@@ -242,9 +242,10 @@ function NodeEditor_({ nodes, edges, ...props }) {
                 const tree = getTreeFromNodesEdges(nodes, edges);
                 setTreeData(tree);
             } else {
+                const zoom = reactFlowInstance.getViewport().zoom;
                 const position = reactFlowInstance.project({
-                    x: event.clientX - reactFlowBounds.left - nodeWidth / 2,
-                    y: event.clientY - reactFlowBounds.top - nodeHeight / 2,
+                    x: event.clientX - reactFlowBounds.left - (nodeWidth / 2) * zoom,
+                    y: event.clientY - reactFlowBounds.top - (nodeHeight / 2) * zoom,
                 });
                 const newId = getId(reactFlowInstance.getNodes());
 
