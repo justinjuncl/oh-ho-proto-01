@@ -1,5 +1,7 @@
 import { Children, forwardRef, useEffect, useRef, useCallback } from "react";
-import "./Panel.css";
+
+import "Panel.css";
+
 
 const PANEL_WIDTH = 600;
 const PANEL_MARGIN = 18;

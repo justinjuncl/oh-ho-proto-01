@@ -1,9 +1,12 @@
-import "./Logo.css";
+import LOGO from "assets/logo.png";
+
+import "Logo.css";
+
 
 export const Logo = (props) => {
     return (
         <div id="logo">
-            <img src={process.env.PUBLIC_URL + '/logo.png'} alt="logo" />
+            <img src={LOGO} alt="logo" />
         </div>
     );
 }

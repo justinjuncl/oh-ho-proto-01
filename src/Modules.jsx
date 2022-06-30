@@ -1,10 +1,12 @@
-import * as THREE from "three";
 import React, { useState, useMemo, useEffect } from "react";
 import { useStoreContext } from "leva";
 import { Edges, useGLTF, useAnimations } from "@react-three/drei";
 
-import { useStore } from "./Storage";
-import { lerpColor, getColor } from "./utils"
+import { useStore } from "Storage";
+import { lerpColor, getColor } from "utils"
+
+import MODULE_R from "assets/moduleR.gltf";
+import MODULE_T from "assets/moduleT.gltf";
 
 
 const closestParent = (group) => {
@@ -15,10 +17,11 @@ const closestParent = (group) => {
     return g;
 };
 
-const GLTF_MODEL = 'smooth';
-
 const getGltfFileName = (moduleType) => {
-    return process.env.PUBLIC_URL + `/${GLTF_MODEL}${moduleType}.gltf`;
+    if (moduleType === 'T') {
+        return MODULE_T;
+    }
+    return MODULE_R;
 }
 
 const ModuleR = ({ moduleType, ...props }) => {
@@ -162,5 +165,5 @@ export const ModuleTree = ({ root }) => {
     );
 }
 
-useGLTF.preload(process.env.PUBLIC_URL + '/smoothT.gltf');
-useGLTF.preload(process.env.PUBLIC_URL + '/smoothR.gltf');
+useGLTF.preload(MODULE_T);
+useGLTF.preload(MODULE_R);

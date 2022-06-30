@@ -1,8 +1,8 @@
 import { useLayoutEffect } from "react"
-import { useControls } from "leva";
+import { Leva, LevaPanel, button, useControls } from "leva";
 
-import { useStore, useTreeStore, useLocalStorage, download, exampleColor } from "./Storage";
-import { Leva, LevaPanel, button } from "leva";
+import { useStore, useTreeStore, useLocalStorage, download, exampleColor } from "Storage";
+
 
 export const useOverlayEditor = (storeColor, storeDebug) => {
     const moduleSelection = useStore(store => store.selection);

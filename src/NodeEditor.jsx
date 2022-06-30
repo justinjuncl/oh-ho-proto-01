@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import ReactFlow, { Handle, Position, ReactFlowProvider, useReactFlow, applyNodeChanges, applyEdgeChanges } from 'react-flow-renderer';
 import dagre from 'dagre';
-import { TangleText } from "./TangleText";
 
-import { useStore, useTreeStore } from './Storage';
+import { TangleText } from "TangleText";
+import { useStore, useTreeStore } from 'Storage';
 
-import "./NodeEditor.css";
+import "NodeEditor.css";
 
 
 const nodeWidth = 122;
@@ -98,19 +98,30 @@ function RModuleNode({ data }) { return <BaseModuleNode data={data} /> }
 function ModulesList() {
     const [ghost, setGhost] = useState(null);
 
-    const onDragStart = (event, nodeType) => {
-        event.dataTransfer.setData('application/reactflow', nodeType);
-        event.dataTransfer.effectAllowed = 'move';
+    const onDragStart = useCallback(
+        (event, nodeType) => {
+            event.dataTransfer.setData('application/reactflow', nodeType);
+            event.dataTransfer.effectAllowed = 'move';
 
-        const ghost = document.getElementsByClassName(`modules-list-item-${nodeType}`)[0].cloneNode(true);
-        // const ghost = document.getElementsByClassName("module-node")[0].cloneNode(true);
-        ghost.style.position = "absolute";
-        ghost.style.top = "10px";
-        ghost.style.right = "10px";
-        ghost.style.zIndex = -1;
-        document.body.appendChild(ghost);
-        event.dataTransfer.setDragImage(ghost, 0, 0);
-    };
+            if (ghost === null || !ghost?.className?.includes(nodeType)) {
+                let _ghost = document.getElementsByClassName(`modules-list-item-${nodeType} ghost`)[0];
+                if (_ghost === undefined) {
+                    _ghost = document.getElementsByClassName(`modules-list-item-${nodeType}`)[0].cloneNode(true);
+                    // const ghost = document.getElementsByClassName("module-node")[0].cloneNode(true);
+                    _ghost.className += " ghost";
+                    _ghost.style.position = "absolute";
+                    _ghost.style.top = "10px";
+                    _ghost.style.right = "10px";
+                    _ghost.style.zIndex = -1;
+                    document.body.appendChild(_ghost);
+                }
+                event.dataTransfer.setDragImage(_ghost, _ghost.offsetWidth / 2, _ghost.offsetHeight / 2);
+                setGhost(_ghost);
+            } else {
+                event.dataTransfer.setDragImage(ghost, ghost.offsetWidth / 2, ghost.offsetHeight / 2);
+            }
+        }, [ghost]
+    );
 
     return (
         <div className="modules-list">

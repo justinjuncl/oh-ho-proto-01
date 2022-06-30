@@ -1,12 +1,12 @@
 import { useCreateStore } from "leva";
 
-import { NodeEditor } from "./NodeEditor";
-import { useOverlayEditor, OverlayEditor } from "./OverlayEditor";
-import { Scene } from "./Scene";
+import { Scene } from "Scene";
+import { Logo } from "Logo";
+import { Panel, PanelList } from "Panel";
+import { NodeEditor } from "NodeEditor";
+import { useOverlayEditor, OverlayEditor } from "OverlayEditor";
 
-import "./App.css";
-import { Logo } from "./Logo";
-import { Panel, PanelList } from "./Panel";
+import "App.css";
 
 
 const App = () => {

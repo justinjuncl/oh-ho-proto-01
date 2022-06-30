@@ -2,22 +2,25 @@ import { Suspense } from "react"
 import { Canvas } from "@react-three/fiber";
 import { softShadows, OrbitControls, Environment, useGLTF } from "@react-three/drei";
 import { EffectComposer, Outline, Selection, Vignette } from "@react-three/postprocessing";
-
 import { LevaStoreProvider } from "leva";
 
-import { useStore, useTreeStore } from "./Storage";
-import { ModuleTree } from "./Modules";
+import { useStore, useTreeStore } from "Storage";
+import { ModuleTree } from "Modules";
+
+import BALL from "assets/ball.gltf";
+import FOREST from "assets/forest.hdr";
+
 
 softShadows();
 
 export default function Ball({ ...props }) {
-    const { nodes, materials } = useGLTF(process.env.PUBLIC_URL + '/ball_palm.gltf')
+    const { nodes, materials } = useGLTF(BALL);
 
     return (
         <group {...props} dispose={null} scale={3} position={[0, 2, 0]}>
             <mesh geometry={nodes.Sphere.geometry} material={materials.palm_tree_bark} />
         </group>
-    )
+    );
 }
 
 
@@ -50,8 +53,7 @@ export const Scene = ({ storeColor, ...props }) => {
             {/* </EffectComposer> */}
 
             <Suspense fallback={null} >
-                <Environment background={false} near={1} far={1000} resolution={256} files={process.env.PUBLIC_URL + "/forest.hdr"} />
-                {/* <Environment background={false} near={1} far={1000} resolution={256} preset="forest" /> */}
+                <Environment background={false} near={1} far={1000} resolution={256} files={FOREST} />
                 <LevaStoreProvider store={storeColor}>
                     <color attach="background" args={[background]} />
 
