@@ -483,7 +483,11 @@ export function NodeEditor({ storeColor, ...props }) {
 
     const setNodeData = useNodeStore(state => state.setNodeData);
     useLayoutEffect(() => {
-        setNodeData(nodes);
+        const nodeData = {};
+        nodes.forEach(node => {
+            nodeData[node.id] = { value: node.data.value, moduleType: node.data.moduleType };
+        });
+        setNodeData(nodeData);
     }, [setNodeData, nodes]);
 
     // useRandomPose(nodes);
