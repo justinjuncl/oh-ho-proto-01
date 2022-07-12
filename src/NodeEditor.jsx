@@ -486,7 +486,7 @@ export function NodeEditor({ storeColor, ...props }) {
         setNodeData(nodes);
     }, [setNodeData, nodes]);
 
-    useRandomPose(nodes);
+    // useRandomPose(nodes);
 
     return (
         <ReactFlowProvider>
