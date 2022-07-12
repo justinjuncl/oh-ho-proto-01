@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import ReactFlow, { Handle, Position, ReactFlowProvider, useReactFlow, applyNodeChanges, applyEdgeChanges } from "react-flow-renderer";
 import dagre from "dagre";
 
 import { TangleText } from "TangleText";
-import { useStore, useTreeStore } from "Storage";
+import { useStore, useTreeStore, useNodeStore } from "Storage";
 
 import "NodeEditor.css";
 
@@ -17,7 +17,7 @@ const getId = (nodes) => {
 
 function BaseModuleNode({ data }) {
     const reactFlowInstance = useReactFlow();
-    const setTreeData = useTreeStore(store => store.setTreeData);
+    const setTreeData = useTreeStore(state => state.setTreeData);
 
     const name = data.moduleType + data.label.replace("Module_", "");
 
@@ -135,10 +135,10 @@ function NodeEditor_({ nodes, edges, ...props }) {
         R: RModuleNode,
     }), []);
 
-    const setTreeData = useTreeStore(store => store.setTreeData);
+    const setTreeData = useTreeStore(state => state.setTreeData);
 
-    const selection = useStore(store => store.selection);
-    const setSelection = useStore(store => store.setSelection);
+    const selection = useStore(state => state.selection);
+    const setSelection = useStore(state => state.setSelection);
 
     const reactFlowInstance = useReactFlow();
     const reactFlowWrapper = useRef(null);
@@ -428,6 +428,46 @@ function setHighlightColor(color, moduleType) {
     });
 }
 
+function useInterval(callback, delay) {
+    const savedCallback = useRef();
+
+    useEffect(() => {
+        savedCallback.current = callback;
+    });
+
+    useEffect(() => {
+        function tick() {
+            savedCallback.current();
+        }
+
+        let id = setInterval(tick, delay);
+        return () => clearInterval(id);
+    }, [delay]);
+}
+
+const randomlySelectNode = (n, nodes) => {
+    const res = {};
+    for (let i = 0; i < n; i++) {
+        let node = nodes[Math.floor(Math.random() * nodes.length)];
+        while (!res.hasOwnProperty(node.id)) {
+            node = nodes[Math.floor(Math.random() * nodes.length)];
+        }
+        res[node.id] = { value: Math.random(), moduleType: node.moduleType };
+    }
+    return res;
+}
+
+function useRandomPose(nodes) {
+    const setNodeData = useNodeStore(state => state.setNodeData);
+
+    useInterval(() => {
+        let n = Math.floor(Math.random() * nodes.length);
+        let selectedNodes = randomlySelectNode(n, nodes);
+        setNodeData(selectedNodes);
+    }, 2000);
+}
+
+
 export function NodeEditor({ storeColor, ...props }) {
     const color_T_highlight = storeColor.get("T_highlight");
     const color_R_highlight = storeColor.get("R_highlight");
@@ -437,9 +477,16 @@ export function NodeEditor({ storeColor, ...props }) {
         setHighlightColor(color_R_highlight, "r");
     }, [color_T_highlight, color_R_highlight]);
 
-    const tree = useTreeStore(store => store.treeData);
+    const tree = useTreeStore(state => state.treeData);
     let [nodes, edges] = getNodesEdgesFromTree(tree);
     [nodes, edges] = getLayoutedElements(nodes, edges);
+
+    const setNodeData = useNodeStore(state => state.setNodeData);
+    useLayoutEffect(() => {
+        setNodeData(nodes);
+    }, [setNodeData, nodes]);
+
+    useRandomPose(nodes);
 
     return (
         <ReactFlowProvider>

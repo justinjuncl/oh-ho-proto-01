@@ -5,9 +5,9 @@ import { useStore, useTreeStore, useLocalStorage, download, exampleColor } from 
 
 
 export const useOverlayEditor = (storeColor, storeDebug) => {
-    const moduleSelection = useStore(store => store.selection);
-    const treeData = useTreeStore(store => store.treeData);
-    const setTreeData = useTreeStore(store => store.setTreeData);
+    const moduleSelection = useStore(state => state.selection);
+    const treeData = useTreeStore(state => state.treeData);
+    const setTreeData = useTreeStore(state => state.setTreeData);
 
     const [colorData, setColorData] = useLocalStorage("colorData", exampleColor);
 

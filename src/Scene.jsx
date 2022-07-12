@@ -29,8 +29,8 @@ export const Scene = ({ storeColor, ...props }) => {
     const axis = storeColor.get("axis");
     const grid = storeColor.get("grid");
 
-    const tree = useTreeStore(store => store.treeData);
-    const setSelection = useStore(store => store.setSelection);
+    const tree = useTreeStore(state => state.treeData);
+    const setSelection = useStore(state => state.setSelection);
 
     return (
         <Canvas

@@ -78,3 +78,6 @@ export const lerpColor = (start, end, amount) => {
     return (rr << 16) + (rg << 8) + (rb | 0);
 }
 
+export function lerp(a, b, t) {
+    return (1 - t) * a + t * b;
+}

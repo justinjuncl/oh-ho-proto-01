@@ -86,7 +86,35 @@ export const useTreeStore = create(persist(
         setTreeData: (treeData) => set({ treeData }),
     }),
     { name: "treeData" }
-))
+));
+
+export const useNodeStore = create(persist(
+    (set, get) => ({
+        nodeData: {},
+        setNodeData: (nodes) => {
+            set(state => ({
+                nodeData: {
+                    ...state.nodeData,
+                    ...nodes
+                }
+            }));
+        },
+        setSingleNodeData: (node) => {
+            set(state => ({
+                nodeData: {
+                    ...state.nodeData,
+                    [node.id]: { value: node.value, moduleType: node.moduleType }
+                }
+            }));
+        },
+        removeNodeData: (id) => {
+            set(state => ({
+                nodeData: (({ [id]: _, ...o }) => o)(state.nodeData)
+            }));
+        }
+    }),
+    { name: "nodeData" }
+));
 
 export function download(data, filename, type) {
     if (type.includes("json")) {
