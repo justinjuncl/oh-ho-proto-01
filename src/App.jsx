@@ -4,7 +4,7 @@ import { Scene } from "Scene";
 import { Logo } from "Logo";
 import { Panel, PanelList } from "Panel";
 import { NodeEditor } from "NodeEditor";
-import { useOverlayEditor, OverlayEditor } from "OverlayEditor";
+import { OverlayEditor } from "OverlayEditor";
 
 import "App.css";
 
@@ -13,18 +13,14 @@ const App = () => {
     const storeColor = useCreateStore();
     const storeDebug = useCreateStore();
 
-    useOverlayEditor(storeColor, storeDebug);
-
     return (
         <>
-            <Scene storeColor={storeColor} />
-            <Logo />
             <PanelList offset={50}>
                 <Panel name="Debug">
                     <OverlayEditor storeColor={storeColor} storeDebug={storeDebug} />
                 </Panel>
                 <Panel name="Node Editor" opened>
-                    <NodeEditor storeColor={storeColor} />
+                    <NodeEditor />
                 </Panel>
             </PanelList>
             <PanelList left>
@@ -35,6 +31,8 @@ const App = () => {
                     <div style={{ textAlign: "center", padding: "100% 0", fontStyle: "italic" }}>Coming soon</div>
                 </Panel>
             </PanelList>
+            <Scene storeColor={storeColor} />
+            <Logo />
         </>
     );
 };

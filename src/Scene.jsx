@@ -1,5 +1,5 @@
-import { Suspense } from "react"
-import { Canvas } from "@react-three/fiber";
+import { Suspense, useLayoutEffect, useState } from "react"
+import { Canvas, invalidate, useFrame } from "@react-three/fiber";
 import { softShadows, OrbitControls, Environment, useGLTF } from "@react-three/drei";
 import { EffectComposer, Outline, Selection, Vignette } from "@react-three/postprocessing";
 import { LevaStoreProvider } from "leva";
@@ -12,6 +12,18 @@ import FOREST from "assets/forest.hdr";
 
 
 softShadows();
+
+export function useTriggerRender() {
+    const shouldRenderFlag = useStore(state => state.shouldRenderFlag);
+    const shouldRender = useStore(state => state.shouldRender);
+
+    useLayoutEffect(() => {
+        if (shouldRenderFlag) {
+            invalidate();
+            shouldRender(false);
+        }
+    }, [shouldRenderFlag, shouldRender]);
+}
 
 export default function Ball({ ...props }) {
     const { nodes, materials } = useGLTF(BALL);
@@ -32,8 +44,11 @@ export const Scene = ({ storeColor, ...props }) => {
     const tree = useTreeStore(state => state.treeData);
     const setSelection = useStore(state => state.setSelection);
 
+    useTriggerRender();
+
     return (
         <Canvas
+            frameloop="demand"
             camera={{ position: [-5, 2, 10], fov: 60 }}
             shadows
             shadowMap
@@ -42,6 +57,7 @@ export const Scene = ({ storeColor, ...props }) => {
                 if (e.button === 0) {
                     setSelection({});
                 }
+                invalidate();
             }}
         >
             {/* <EffectComposer> */}
@@ -58,7 +74,7 @@ export const Scene = ({ storeColor, ...props }) => {
                     <color attach="background" args={[background]} />
 
                     <group>
-                        <Ball />
+                        {/* <Ball /> */}
                         <group position={[0, 3.5, 0]} rotation={[0, 0, Math.PI]}>
                             <ModuleTree node={tree} />
                         </group>

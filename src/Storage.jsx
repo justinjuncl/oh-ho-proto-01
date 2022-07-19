@@ -1,6 +1,6 @@
 import { useState } from "react";
 import create from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, devtools } from "zustand/middleware";
 
 export const exampleTree = {
     id: 0,
@@ -74,21 +74,24 @@ export const useLocalStorage = (key, defaultValue) => {
     return [storedValue, setValue];
 };
 
-export const useStore = create(set => ({
+export const useStore = create(devtools(set => ({
     selection: {},
-    setSelection: (selection) => set({ selection: selection })
-}));
+    setSelection: (selection) => set({ selection }),
+
+    shouldRenderFlag: true,
+    shouldRender: (shouldRenderFlag = true) => set({ shouldRenderFlag })
+})));
 
 
-export const useTreeStore = create(persist(
+export const useTreeStore = create(devtools(persist(
     (set, get) => ({
         treeData: exampleTree,
         setTreeData: (treeData) => set({ treeData }),
     }),
     { name: "treeData" }
-));
+)));
 
-export const useNodeStore = create(persist(
+export const useNodeStore = create(devtools(persist(
     (set, get) => ({
         nodeData: {},
         setNodeData: (nodes) => {
@@ -114,7 +117,7 @@ export const useNodeStore = create(persist(
         }
     }),
     { name: "nodeData" }
-));
+)));
 
 export function download(data, filename, type) {
     if (type.includes("json")) {

@@ -92,9 +92,6 @@ function BaseModuleNode({ data }) {
     );
 }
 
-const TModuleNode = BaseModuleNode;
-const RModuleNode = BaseModuleNode;
-
 function ModulesList() {
     const onDragStart = (event, nodeType) => {
         // const ghost = document.getElementsByClassName("module-node")[0].cloneNode(true);
@@ -122,6 +119,9 @@ function ModulesList() {
             <div className="modules-list-item modules-list-item-R" onDragStart={(event) => onDragStart(event, "R")} draggable>
                 R Module
             </div>
+            <div className="modules-list-item modules-list-item-K" onDragStart={(event) => onDragStart(event, "K")} draggable>
+                K Module
+            </div>
         </div>
     );
 }
@@ -131,8 +131,9 @@ function NodeEditor_({ nodes, edges, ...props }) {
         background: "white"
     };
     const nodeTypes = useMemo(() => ({
-        T: TModuleNode,
-        R: RModuleNode,
+        T: BaseModuleNode,
+        R: BaseModuleNode,
+        K: BaseModuleNode,
     }), []);
 
     const setTreeData = useTreeStore(state => state.setTreeData);
@@ -152,7 +153,12 @@ function NodeEditor_({ nodes, edges, ...props }) {
             }];
             reactFlowInstance.setNodes((nodes) => applyNodeChanges(changes, nodes));
         }
-    }, [reactFlowInstance, selection?.object?.name]);
+        // const selected = reactFlowInstance.getNodes()
+        //     .filter(node => node.selected)
+        //     .map(node => ({ id: node.id, type: "select", selected: false }));
+        // console.log(selected);
+    }, [reactFlowInstance, selection, selection?.object?.name]);
+
 
     const onNodesChange = useCallback(
         (changes) => {
@@ -422,12 +428,6 @@ function getTreeFromNodesEdges(nodes, edges) {
     return roots[0];
 }
 
-function setHighlightColor(color, moduleType) {
-    [...document.getElementsByClassName("react-flow__renderer")].forEach((el) => {
-        el.style.setProperty(`--highlight-${moduleType}-color`, color);
-    });
-}
-
 function useInterval(callback, delay) {
     const savedCallback = useRef();
 
@@ -446,49 +446,43 @@ function useInterval(callback, delay) {
 }
 
 const randomlySelectNode = (n, nodes) => {
-    const res = {};
+    let res = {};
     for (let i = 0; i < n; i++) {
-        let node = nodes[Math.floor(Math.random() * nodes.length)];
-        while (!res.hasOwnProperty(node.id)) {
-            node = nodes[Math.floor(Math.random() * nodes.length)];
-        }
-        res[node.id] = { value: Math.random(), moduleType: node.moduleType };
+        let node = nodes[Math.floor(Math.random() * (nodes.length))];
+        // while (!res.hasOwnProperty(node.id)) {
+        //     node = nodes[Math.floor(Math.random() * (nodes.length - 1))];
+        // }
+        res[node.id] = { value: Math.random(), moduleType: node.data.moduleType };
     }
     return res;
 }
 
 function useRandomPose(nodes) {
     const setNodeData = useNodeStore(state => state.setNodeData);
+    const shouldRender = useStore(state => state.shouldRender);
 
     useInterval(() => {
         let n = Math.floor(Math.random() * nodes.length);
         let selectedNodes = randomlySelectNode(n, nodes);
         setNodeData(selectedNodes);
-    }, 2000);
+        shouldRender();
+    }, 5000);
 }
 
 
-export function NodeEditor({ storeColor, ...props }) {
-    const color_T_highlight = storeColor.get("T_highlight");
-    const color_R_highlight = storeColor.get("R_highlight");
-
-    useEffect(() => {
-        setHighlightColor(color_T_highlight, "t");
-        setHighlightColor(color_R_highlight, "r");
-    }, [color_T_highlight, color_R_highlight]);
-
+export function NodeEditor(props) {
     const tree = useTreeStore(state => state.treeData);
     let [nodes, edges] = getNodesEdgesFromTree(tree);
     [nodes, edges] = getLayoutedElements(nodes, edges);
 
     const setNodeData = useNodeStore(state => state.setNodeData);
-    useLayoutEffect(() => {
+    useEffect(() => {
         const nodeData = {};
         nodes.forEach(node => {
             nodeData[node.id] = { value: node.data.value, moduleType: node.data.moduleType };
         });
         setNodeData(nodeData);
-    }, [setNodeData, nodes]);
+    }, [nodes]);
 
     // useRandomPose(nodes);
 

@@ -1,3 +1,18 @@
+export function colorDist(colorA, colorB) {
+    const hexA = colorA.getHex();
+    const hexB = colorB.getHex();
+
+    const [rA, gA, bA] = [(hexA >> 16) & 255, (hexA >> 8) & 255, hexA & 255];
+    const [rB, gB, bB] = [(hexB >> 16) & 255, (hexB >> 8) & 255, hexB & 255];
+
+    const mean_r = (rA + rB) / 2;
+    const d_r = rA - rB;
+    const d_g = gA - gB;
+    const d_b = bA - bB;
+
+    return (((512 + mean_r) * d_r * d_r) >> 8) + 4 * d_g * d_g + (((767 - mean_r) * d_b * d_b) >> 8);
+}
+
 export function hexToHSL(H) {
     // Convert hex to RGB first
     let r = 0, g = 0, b = 0;

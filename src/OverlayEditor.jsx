@@ -3,8 +3,14 @@ import { Leva, LevaPanel, button, useControls } from "leva";
 
 import { useStore, useTreeStore, useLocalStorage, download, exampleColor } from "Storage";
 
+function setHighlightColor(color, moduleType) {
+    [...document.getElementsByClassName("react-flow__renderer")].forEach((el) => {
+        el.style.setProperty(`--highlight-${moduleType}-color`, color);
+    });
+}
 
-export const useOverlayEditor = (storeColor, storeDebug) => {
+
+export const OverlayEditor = ({ storeColor, storeDebug }) => {
     const moduleSelection = useStore(state => state.selection);
     const treeData = useTreeStore(state => state.treeData);
     const setTreeData = useTreeStore(state => state.setTreeData);
@@ -44,10 +50,9 @@ export const useOverlayEditor = (storeColor, storeDebug) => {
         setDebug({
             Selection: JSON.stringify({
                 module_name: moduleSelection?.object?.name,
-                select_face: moduleSelection?.face
             }, null, 2)
         });
-    }, [moduleSelection, setDebug]);
+    }, [moduleSelection]); // eslint-disable-line react-hooks/exhaustive-deps
 
     useLayoutEffect(() => {
         if (userLoadedTreeJSON) {
@@ -71,16 +76,17 @@ export const useOverlayEditor = (storeColor, storeDebug) => {
 
             reader.readAsText(userLoadedTreeJSON);
         }
-    }, [userLoadedTreeJSON, setColorControls, setColorData, setTreeData, setUserLoadedTreeJSON]);
+    }, [userLoadedTreeJSON]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // useLayoutEffect(() => {
+    //     setColorData(color);
+    // }, [color]); // eslint-disable-line react-hooks/exhaustive-deps
 
     useLayoutEffect(() => {
-        setColorData(color);
-    }, [color, setColorData]);
+        setHighlightColor(color.T_highlight, "t");
+        setHighlightColor(color.R_highlight, "r");
+    }, [color.T_highlight, color.R_highlight]);
 
-}
-
-
-export const OverlayEditor = ({ storeColor, storeDebug }) => {
     return (
         <div
             style={{

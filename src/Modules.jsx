@@ -1,26 +1,53 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useStoreContext } from "leva";
-import { useFrame } from "@react-three/fiber";
+import { invalidate, useFrame, useThree } from "@react-three/fiber";
 import { Edges, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 
 import { useStore, useNodeStore } from "Storage";
-import { lerp, lerpColor } from "utils";
+import { lerp, lerpColor, colorDist } from "utils";
 
+import MODULE_K from "assets/moduleK.gltf";
 import MODULE_R from "assets/moduleR.gltf";
 import MODULE_T from "assets/moduleT.gltf";
 
 const getGltfFileName = {
+    "K": MODULE_K,
+    "R": MODULE_R,
     "T": MODULE_T,
-    "R": MODULE_R
 };
 
 const getMesh = {
-    "T": ModuleT,
-    "R": ModuleR
+    "K": MeshK,
+    "R": MeshR,
+    "T": MeshT,
 }
 
-export function useAnimations(clips, getTarget) {
+const getModule = {
+    "K": ModuleK,
+    "R": BaseModule,
+    "T": BaseModule,
+}
+
+function useOffsetFromParent(parentModuleType, face) {
+    const gltfFileNameParent = getGltfFileName[parentModuleType];
+    const { nodes: parentNodes } = useGLTF(gltfFileNameParent);
+
+    const offset = useMemo(() => {
+        for (const [key, val] of Object.entries(parentNodes)) {
+            if (key === `f_${face}`) {
+                return { position: val.position, rotation: val.rotation };
+            }
+        }
+    }, [parentNodes, face]);
+
+    return offset;
+}
+
+function useAnimations(moduleType, getTarget) {
+    const gltfFileName = getGltfFileName[moduleType];
+    const { animations: clips } = useGLTF(gltfFileName);
+
     const ref = useRef();
     const [mixer] = useState(() => new THREE.AnimationMixer());
     const lazyActions = useRef({});
@@ -38,7 +65,7 @@ export function useAnimations(clips, getTarget) {
             })
         );
         return actions;
-    })
+    });
 
     useEffect(() => {
         const currentRoot = ref.current;
@@ -71,31 +98,86 @@ export function useAnimations(clips, getTarget) {
             Object.values(actions).forEach((action) => {
                 action.paused = true;
             });
+
+            invalidate();
         }
     });
 
     return ref;
 }
 
-
-const useColor = (selected, baseColor, selectedColor) => {
+function useAnimatedMaterialColor(baseColor, selectedColor, getIsSelected) {
     const ref = useRef();
     const color = useMemo(() => new THREE.Color(baseColor), [baseColor]);
 
     useFrame(() => {
-        if (selected)
+        const isSelected = getIsSelected();
+        if (isSelected)
             color.setHex(selectedColor);
         else
             color.setHex(baseColor);
 
-        ref.current.material.color.lerp(color, 0.1);
+        if (colorDist(ref.current.material.color, color) > 10) {
+            ref.current.material.color.lerp(color, 0.1);
+
+            invalidate();
+        }
     });
 
     return ref;
-};
+}
 
+function useColor(moduleType) {
+    const store = useStoreContext();
+    const startColor = store.get(moduleType + "_start");
+    const endColor = store.get(moduleType + "_end");
+    const highlightColor = store.get(moduleType + "_highlight");
+    const rnd = useMemo(() => Math.random() * 0.8 + 0.2, []);
+    const baseColor = useMemo(() => lerpColor(startColor, endColor, rnd),
+        [startColor, endColor, rnd]
+    );
+    const selectedColor = useMemo(() => lerpColor(baseColor, highlightColor, 0.8),
+        [baseColor, highlightColor]
+    );
 
-function ModuleR(props) {
+    return [baseColor, selectedColor];
+}
+
+function useOnGroupClick(ref) {
+    const setSelection = useStore(state => state.setSelection);
+    const onClick = useCallback(
+        (e) => {
+            e.stopPropagation();
+            const isSelected = useStore.getState().selection?.object?.name === ref.current.name;
+            if (!isSelected) {
+                setSelection({
+                    object: ref.current,
+                });
+            } else {
+                setSelection({});
+            }
+            invalidate();
+        },
+        [setSelection, ref]
+    );
+
+    return onClick;
+}
+
+function MeshK(props) {
+    const gltfFileName = getGltfFileName["K"];
+    const { nodes, materials } = useGLTF(gltfFileName);
+
+    return (
+        <>
+            <mesh geometry={nodes.joint_K.geometry} material={materials.jointMaterial}>
+                {props.children}
+            </mesh>
+        </>
+    );
+}
+
+function MeshR(props) {
     const gltfFileName = getGltfFileName["R"];
     const { nodes, materials: _materials } = useGLTF(gltfFileName);
 
@@ -103,7 +185,9 @@ function ModuleR(props) {
         return [_materials.jointMaterial.clone(), _materials.baseMaterial.clone()];
     }, [_materials]);
 
-    const ref = useColor(props.selected, props.baseColor, props.selectedColor);
+    const ref = useAnimatedMaterialColor(props.baseColor, props.selectedColor, () =>
+        useStore.getState().selection?.object?.name === props.name
+    );
 
     return (
         <>
@@ -116,7 +200,7 @@ function ModuleR(props) {
     );
 };
 
-function ModuleT(props) {
+function MeshT(props) {
     const gltfFileName = getGltfFileName["T"];
     const { nodes, materials: _materials } = useGLTF(gltfFileName);
 
@@ -124,7 +208,9 @@ function ModuleT(props) {
         return [_materials.jointMaterial.clone(), _materials.baseMaterial.clone()];
     }, [_materials]);
 
-    const ref = useColor(props.selected, props.baseColor, props.selectedColor);
+    const ref = useAnimatedMaterialColor(props.baseColor, props.selectedColor, () =>
+        useStore.getState().selection?.object?.name === props.name
+    );
 
     return (
         <>
@@ -150,99 +236,67 @@ function ModuleT(props) {
             </mesh>
         </>
     );
-};
+}
 
-function Module({ moduleType, face, id, ...props }) {
-    const gltfFileName = getGltfFileName[moduleType];
-    const { nodes, animations } = useGLTF(gltfFileName);
-    const ref = useAnimations(animations, () =>
-        useNodeStore.getState().nodeData[id].value * 0.99999
-    );
-
-    const [offset_pos_rot, normal_to_face] = useMemo(() => {
-        const offset_pos_rot = {};
-        const normal_to_face = {};
-        for (const [key, val] of Object.entries(nodes)) {
-            if (key.includes("f_")) {
-                offset_pos_rot[key] = { position: val.position, rotation: val.rotation };
-                normal_to_face[val.position.clone().normalize().toArray()] = key;
-            }
-        }
-        return [offset_pos_rot, normal_to_face];
-    }, [nodes]);
-
-    const selection = useStore(state => state.selection);
-    const setSelection = useStore(state => state.setSelection);
-
-    const store = useStoreContext();
-    const startColor = store.get(moduleType + "_start");
-    const endColor = store.get(moduleType + "_end");
-    const highlightColor = store.get(moduleType + "_highlight");
+function ModuleK({ moduleType, face, id, parentModuleType, ...props }) {
+    const groupRef = useRef();
 
     const name = "Module_" + id;
-    const offset = offset_pos_rot["f_" + face];
-
-    const selected = selection?.object?.name === name;
-
-    const [rnd] = useState(() => Math.random() * 0.8 + 0.2);
-    const baseColor = useMemo(() => lerpColor(startColor, endColor, rnd),
-        [startColor, endColor, rnd]
-    );
-    const selectedColor = useMemo(() => lerpColor(baseColor, highlightColor, 0.8),
-        [baseColor, highlightColor]
-    );
-
-    // const updateNodeData = useTreeStore(state => state.updateNodeData);
-    // const removeNodeData = useTreeStore(state => state.removeNodeData);
-    //
-    // useEffect(() => {
-    //     if (selected) {
-    //         const newNode = { id, value, moduleType };
-    //         updateNodeData(newNode);
-    //         console.log(useTreeStore.getState().nodeData);
-    //     } else {
-    //         removeNodeData(id);
-    //         console.log(useTreeStore.getState().nodeData);
-    //     }
-    // }, [selected, id, value, moduleType, updateNodeData, removeNodeData]);
+    const offset = useOffsetFromParent(parentModuleType, face);
+    const onClick = useOnGroupClick(groupRef);
 
     const Mesh = useMemo(() => getMesh[moduleType], [moduleType]);
 
     return (
         <group
-            ref={ref}
+            ref={groupRef}
             name={name}
-            moduleType={moduleType}
-            face={face}
             position={offset.position}
             rotation={offset.rotation}
-
-            onClick={(e) => {
-                e.stopPropagation();
-                if (!selected) {
-                    setSelection({
-                        object: ref.current,
-                        face: normal_to_face[e.face.normal.toArray()]
-                    });
-                } else {
-                    setSelection({});
-                }
-            }}
+            onClick={onClick}
         >
-            <Mesh selected={selected} baseColor={baseColor} selectedColor={selectedColor} {...props} />
+            <Mesh name={name} {...props} />
         </group>
     );
 }
 
-export const ModuleTree = ({ node }) => {
+function BaseModule({ moduleType, face, id, parentModuleType, ...props }) {
+    const groupRef = useAnimations(moduleType, () =>
+        useNodeStore.getState().nodeData[id].value * 0.99999
+    );
+
+    const name = "Module_" + id;
+    const offset = useOffsetFromParent(parentModuleType, face);
+    const onClick = useOnGroupClick(groupRef);
+
+    const Mesh = useMemo(() => getMesh[moduleType], [moduleType]);
+    const [baseColor, selectedColor] = useColor(moduleType);
+
     return (
-        <Module moduleType={node.moduleType} face={node.face} id={node.id}>
-            {node.children.map(child => (
-                <ModuleTree key={child.id} node={child} />
+        <group
+            ref={groupRef}
+            name={name}
+            position={offset.position}
+            rotation={offset.rotation}
+            onClick={onClick}
+        >
+            <Mesh name={name} baseColor={baseColor} selectedColor={selectedColor} {...props} />
+        </group>
+    );
+}
+
+export const ModuleTree = ({ node: { moduleType, face, id, children }, parentModuleType = "T" }) => {
+    const Module = useMemo(() => getModule[moduleType], [moduleType]);
+
+    return (
+        <Module moduleType={moduleType} face={face} id={id} parentModuleType={parentModuleType}>
+            {children.map(child => (
+                <ModuleTree key={child.id} node={child} parentModuleType={moduleType} />
             ))}
         </Module>
     );
 }
 
-useGLTF.preload(MODULE_T);
+useGLTF.preload(MODULE_K);
 useGLTF.preload(MODULE_R);
+useGLTF.preload(MODULE_T);
