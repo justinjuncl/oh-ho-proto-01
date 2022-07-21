@@ -3,13 +3,20 @@ import ReactFlow, { Handle, Position, ReactFlowProvider, useReactFlow, applyNode
 import dagre from "dagre";
 
 import { TangleText } from "TangleText";
-import { useStore, useTreeStore, useNodeStore } from "Storage";
+import { useStore, useNodeStore, useTreeStore } from "Storage";
 
 import "NodeEditor.css";
 
 
 const nodeWidth = 122;
 const nodeHeight = 76;
+
+const nodeTypes = {
+    K: BaseModuleNode,
+    R: BaseModuleNode,
+    T: BaseModuleNode,
+};
+
 
 const getId = (nodes) => {
     return Math.max(...nodes.map(node => Number(node.id))) + 1;
@@ -113,15 +120,11 @@ function ModulesList() {
 
     return (
         <div className="modules-list">
-            <div className="modules-list-item modules-list-item-T" onDragStart={(event) => onDragStart(event, "T")} draggable>
-                T Module
-            </div>
-            <div className="modules-list-item modules-list-item-R" onDragStart={(event) => onDragStart(event, "R")} draggable>
-                R Module
-            </div>
-            <div className="modules-list-item modules-list-item-K" onDragStart={(event) => onDragStart(event, "K")} draggable>
-                K Module
-            </div>
+            {Object.keys(nodeTypes).map((nodeType) => (
+                <div key={nodeType} className={`modules-list-item modules-list-item-${nodeType}`} onDragStart={(event) => onDragStart(event, nodeType)} draggable>
+                    {nodeType} Module
+                </div>
+            ))}
         </div>
     );
 }
@@ -130,11 +133,6 @@ function NodeEditor_({ nodes, edges, ...props }) {
     const reactFlowStyle = {
         background: "white"
     };
-    const nodeTypes = useMemo(() => ({
-        T: BaseModuleNode,
-        R: BaseModuleNode,
-        K: BaseModuleNode,
-    }), []);
 
     const setTreeData = useTreeStore(state => state.setTreeData);
 

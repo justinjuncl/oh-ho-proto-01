@@ -91,6 +91,15 @@ export const useTreeStore = create(devtools(persist(
     { name: "treeData" }
 )));
 
+export const useColorStore = create(devtools(persist(
+    (set, get) => ({
+        colorData: exampleColor,
+        setColorData: (colorData) => set({ colorData }),
+    }),
+    { name: "colorData" }
+)));
+
+
 export const useNodeStore = create(devtools(persist(
     (set, get) => ({
         nodeData: {},

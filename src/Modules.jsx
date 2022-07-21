@@ -4,7 +4,7 @@ import { invalidate, useFrame, useThree } from "@react-three/fiber";
 import { Edges, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 
-import { useStore, useNodeStore } from "Storage";
+import { useStore, useNodeStore, useColorStore } from "Storage";
 import { lerp, lerpColor, colorDist } from "utils";
 
 import MODULE_K from "assets/moduleK.gltf";
@@ -128,10 +128,11 @@ function useAnimatedMaterialColor(baseColor, selectedColor, getIsSelected) {
 }
 
 function useColor(moduleType) {
-    const store = useStoreContext();
-    const startColor = store.get(moduleType + "_start");
-    const endColor = store.get(moduleType + "_end");
-    const highlightColor = store.get(moduleType + "_highlight");
+    const color = useColorStore(state => state.colorData);
+    const startColor = color[moduleType + "_start"];
+    const endColor = color[moduleType + "_end"];
+    const highlightColor = color[moduleType + "_highlight"];
+
     const rnd = useMemo(() => Math.random() * 0.8 + 0.2, []);
     const baseColor = useMemo(() => lerpColor(startColor, endColor, rnd),
         [startColor, endColor, rnd]

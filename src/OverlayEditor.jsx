@@ -1,7 +1,7 @@
 import { useLayoutEffect } from "react"
-import { Leva, LevaPanel, button, useControls } from "leva";
+import { Leva, LevaPanel, button, useControls, useCreateStore } from "leva";
 
-import { useStore, useTreeStore, useLocalStorage, download, exampleColor } from "Storage";
+import { useStore, useTreeStore, useColorStore, download } from "Storage";
 
 function setHighlightColor(color, moduleType) {
     [...document.getElementsByClassName("react-flow__renderer")].forEach((el) => {
@@ -10,12 +10,17 @@ function setHighlightColor(color, moduleType) {
 }
 
 
-export const OverlayEditor = ({ storeColor, storeDebug }) => {
+export const OverlayEditor = (props) => {
+    const storeColor = useCreateStore();
+    const storeDebug = useCreateStore();
+
     const moduleSelection = useStore(state => state.selection);
+
     const treeData = useTreeStore(state => state.treeData);
     const setTreeData = useTreeStore(state => state.setTreeData);
 
-    const [colorData, setColorData] = useLocalStorage("colorData", exampleColor);
+    const colorData = useColorStore(state => state.colorData);
+    const setColorData = useColorStore(state => state.setColorData);
 
     const [, setDebug] = useControls(() => ({
         Selection: {
@@ -52,7 +57,7 @@ export const OverlayEditor = ({ storeColor, storeDebug }) => {
                 module_name: moduleSelection?.object?.name,
             }, null, 2)
         });
-    }, [moduleSelection]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [moduleSelection, setDebug]);
 
     useLayoutEffect(() => {
         if (userLoadedTreeJSON) {
@@ -76,11 +81,11 @@ export const OverlayEditor = ({ storeColor, storeDebug }) => {
 
             reader.readAsText(userLoadedTreeJSON);
         }
-    }, [userLoadedTreeJSON]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [setColorControls, setColorData, setTreeData, setUserLoadedTreeJSON, userLoadedTreeJSON]);
 
-    // useLayoutEffect(() => {
-    //     setColorData(color);
-    // }, [color]); // eslint-disable-line react-hooks/exhaustive-deps
+    useLayoutEffect(() => {
+        setColorData(color);
+    }, [setColorData, color]);
 
     useLayoutEffect(() => {
         setHighlightColor(color.T_highlight, "t");

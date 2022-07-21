@@ -1,5 +1,3 @@
-import { useCreateStore } from "leva";
-
 import { Scene } from "Scene";
 import { Logo } from "Logo";
 import { Panel, PanelList } from "Panel";
@@ -10,14 +8,11 @@ import "App.css";
 
 
 const App = () => {
-    const storeColor = useCreateStore();
-    const storeDebug = useCreateStore();
-
     return (
         <>
             <PanelList offset={50}>
                 <Panel name="Debug">
-                    <OverlayEditor storeColor={storeColor} storeDebug={storeDebug} />
+                    <OverlayEditor />
                 </Panel>
                 <Panel name="Node Editor" opened>
                     <NodeEditor />
@@ -31,7 +26,7 @@ const App = () => {
                     <div style={{ textAlign: "center", padding: "100% 0", fontStyle: "italic" }}>Coming soon</div>
                 </Panel>
             </PanelList>
-            <Scene storeColor={storeColor} />
+            <Scene />
             <Logo />
         </>
     );
