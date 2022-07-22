@@ -17,6 +17,7 @@ export class TangleText extends React.Component {
     static propTypes = {
         value: PropTypes.number.isRequired,
         onChange: PropTypes.func.isRequired,
+        onBlur: PropTypes.func.isRequired,
         min: PropTypes.number,
         max: PropTypes.number,
         step: PropTypes.number,
@@ -70,8 +71,8 @@ export class TangleText extends React.Component {
         if (isNaN(parsed)) {
             this.setState({ value: this.props.value });
         } else {
-            this.setValue(parsed);
-            // this.props.onChange(this.setValue(parsed));
+            const finalValue = this.setValue(parsed);
+            this.props.onBlur(finalValue);
         }
         this.setState({ isReadOnly: true });
     }

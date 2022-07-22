@@ -1,29 +1,17 @@
-import { Suspense, useLayoutEffect, memo } from "react"
+import { Suspense, useMemo } from "react"
 import { Canvas, invalidate } from "@react-three/fiber";
 import { softShadows, OrbitControls, Environment, useGLTF } from "@react-three/drei";
 import { EffectComposer, Outline, Selection, Vignette } from "@react-three/postprocessing";
 
 import { useStore, useTreeStore, useColorStore } from "Storage";
 import { ModuleTree } from "Modules";
+import { coerceTree } from "NodeEditor";
 
 import BALL from "assets/ball.gltf";
 import FOREST from "assets/forest.hdr";
 
-const MemoizedModuleTree = memo(ModuleTree);
 
 softShadows();
-
-export function useTriggerRender() {
-    const shouldRenderFlag = useStore(state => state.shouldRenderFlag);
-    const shouldRender = useStore(state => state.shouldRender);
-
-    useLayoutEffect(() => {
-        if (shouldRenderFlag) {
-            invalidate();
-            shouldRender(false);
-        }
-    }, [shouldRenderFlag, shouldRender]);
-}
 
 export default function Ball(props) {
     const { nodes, materials } = useGLTF(BALL);
@@ -45,7 +33,7 @@ export const Scene = (props) => {
     const tree = useTreeStore(state => state.treeData);
     const setSelection = useStore(state => state.setSelection);
 
-    useTriggerRender();
+    const memoizedNode = useMemo(() => coerceTree(tree), [tree]);
 
     return (
         <Canvas
@@ -76,7 +64,7 @@ export const Scene = (props) => {
                 <group>
                     <Ball />
                     <group position={[0, 3.5, 0]} rotation={[0, 0, Math.PI]}>
-                        <MemoizedModuleTree node={tree} />
+                        <ModuleTree node={memoizedNode} />
                     </group>
                     <gridHelper args={[100, 20, axis, grid]} position={[0, 0, 0]} />
                 </group>

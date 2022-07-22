@@ -115,7 +115,7 @@ export const useNodeStore = create(devtools(persist(
             set(state => ({
                 nodeData: {
                     ...state.nodeData,
-                    [node.id]: { value: node.value, moduleType: node.moduleType }
+                    [node.id]: { value: node.value }
                 }
             }));
         },

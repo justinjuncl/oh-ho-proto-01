@@ -16,7 +16,6 @@ export const OverlayEditor = (props) => {
 
     const moduleSelection = useStore(state => state.selection);
 
-    const treeData = useTreeStore(state => state.treeData);
     const setTreeData = useTreeStore(state => state.setTreeData);
 
     const colorData = useColorStore(state => state.colorData);
@@ -47,9 +46,9 @@ export const OverlayEditor = (props) => {
             image: undefined
         },
         "Export JSON": button(() => {
-            download({ tree: treeData, color }, "export.json", "application/json");
+            download({ tree: useTreeStore.getState().treeData, color: useColorStore.getState().colorData }, "export.json", "application/json");
         }),
-    }), { store: storeColor }, [treeData, color]);
+    }), { store: storeColor });
 
     useLayoutEffect(() => {
         setDebug({

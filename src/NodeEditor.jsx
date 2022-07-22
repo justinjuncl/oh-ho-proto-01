@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import ReactFlow, { Handle, Position, ReactFlowProvider, useReactFlow, applyNodeChanges, applyEdgeChanges } from "react-flow-renderer";
 import dagre from "dagre";
+import { invalidate } from "@react-three/fiber";
 
 import { TangleText } from "TangleText";
 import { useStore, useNodeStore, useTreeStore } from "Storage";
@@ -17,25 +18,36 @@ const nodeTypes = {
     T: BaseModuleNode,
 };
 
-
 const getId = (nodes) => {
     return Math.max(...nodes.map(node => Number(node.id))) + 1;
 }
 
 function BaseModuleNode({ data }) {
-    const reactFlowInstance = useReactFlow();
+    const setSingleNodeData = useNodeStore(state => state.setSingleNodeData);
     const setTreeData = useTreeStore(state => state.setTreeData);
+    const reactFlowInstance = useReactFlow();
 
+    const id = data.label.replace("Module_", "");
     const name = data.moduleType + data.label.replace("Module_", "");
+    const moduleType = data.moduleType;
+    const defaultValue = useNodeStore.getState().nodeData[id].value;
+    // const defaultValue = data.value;
 
     const onChange = useCallback(
         (value) => {
-            const node_id = data.label.replace("Module_", "");
+            setSingleNodeData({ id, value, moduleType });
+            invalidate();
+        },
+        [moduleType, id, setSingleNodeData]
+    );
+
+    const onBlur = useCallback(
+        (value) => {
             const nodes = reactFlowInstance.getNodes().map((node) => {
-                if (node.id === node_id) {
+                if (node.id === id) {
                     return {
                         ...node,
-                        data: { ...node.data, value: value }
+                        data: { ...node.data, value }
                     };
                 }
                 return node;
@@ -44,7 +56,7 @@ function BaseModuleNode({ data }) {
             const tree = getTreeFromNodesEdges(nodes, edges);
             setTreeData(tree);
         },
-        [data.label, reactFlowInstance, setTreeData]
+        [id, reactFlowInstance, setTreeData],
     );
 
     const [dragTarget, setDragTarget] = useState(null);
@@ -81,9 +93,11 @@ function BaseModuleNode({ data }) {
                         <label className="label-value-text">value</label>
                         <TangleText
                             className="label-value"
-                            value={data.value}
+                            value={defaultValue}
                             step={0.01} min={0} max={1} decimals={2}
-                            onChange={onChange} />
+                            onChange={onChange}
+                            onBlur={onBlur}
+                        />
                     </div>
                     <label>face</label>
                 </div>
@@ -121,7 +135,12 @@ function ModulesList() {
     return (
         <div className="modules-list">
             {Object.keys(nodeTypes).map((nodeType) => (
-                <div key={nodeType} className={`modules-list-item modules-list-item-${nodeType}`} onDragStart={(event) => onDragStart(event, nodeType)} draggable>
+                <div
+                    key={nodeType}
+                    className={`modules-list-item modules-list-item-${nodeType}`}
+                    onDragStart={(event) => onDragStart(event, nodeType)}
+                    draggable
+                >
                     {nodeType} Module
                 </div>
             ))}
@@ -136,26 +155,35 @@ function NodeEditor_({ nodes, edges, ...props }) {
 
     const setTreeData = useTreeStore(state => state.setTreeData);
 
+    const setSingleNodeData = useNodeStore(state => state.setSingleNodeData);
+
     const selection = useStore(state => state.selection);
     const setSelection = useStore(state => state.setSelection);
+    const [lastSelection, setLastSelection] = useState("");
 
     const reactFlowInstance = useReactFlow();
     const reactFlowWrapper = useRef(null);
 
     useEffect(() => {
-        if (selection?.object?.name.replace("Module_", "")) {
-            const changes = [{
-                id: selection.object.name.replace("Module_", ""),
+        const id = selection?.object?.name.replace("Module_", "");
+        const changes = [];
+        if (id !== lastSelection) {
+            changes.push({
+                id: lastSelection,
+                type: "select",
+                selected: false
+            });
+        }
+        if (id) {
+            changes.push({
+                id: id,
                 type: "select",
                 selected: true
-            }];
-            reactFlowInstance.setNodes((nodes) => applyNodeChanges(changes, nodes));
+            });
         }
-        // const selected = reactFlowInstance.getNodes()
-        //     .filter(node => node.selected)
-        //     .map(node => ({ id: node.id, type: "select", selected: false }));
-        // console.log(selected);
-    }, [reactFlowInstance, selection, selection?.object?.name]);
+        setLastSelection(id);
+        reactFlowInstance.setNodes((nodes) => applyNodeChanges(changes, nodes));
+    }, [reactFlowInstance, selection?.object?.name]);
 
 
     const onNodesChange = useCallback(
@@ -168,17 +196,17 @@ function NodeEditor_({ nodes, edges, ...props }) {
                             object: {
                                 name: "Module_" + change.id,
                             },
-                            face: {}
                         });
                         selected = true;
-                    } else {
-                        if (!selected) {
-                            setSelection({});
-                        }
+                        setLastSelection(change.id);
+                    } else if (!selected) {
+                        setSelection({});
+                        setLastSelection("");
                     }
                 }
             }
             reactFlowInstance.setNodes((ns) => applyNodeChanges(changes, ns));
+            invalidate();
         },
         [reactFlowInstance, setSelection]
     );
@@ -225,18 +253,20 @@ function NodeEditor_({ nodes, edges, ...props }) {
             const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
             const type = event.dataTransfer.getData("application/reactflow");
 
-            const targetNode = event.target?.closest(".react-flow__node")?.getAttribute("data-id");
-
-            if (typeof type === "undefined" || !type) {
-                return;
-            }
+            const targetNode = event.target?.closest(".react-flow__node");
 
             if (targetNode) {
+                // Replace existing node's moduleType
+                const targetId = targetNode.getAttribute("data-id");
+                const targetType = targetNode.className.match(/react-flow__node-(\w)/)[1];
+                if (type === targetType)
+                    return
+
                 const nodes = reactFlowInstance.getNodes().map((node) => {
-                    if (node.id === targetNode && node.type !== type) {
+                    if (node.id === targetId) {
                         return {
                             ...node,
-                            type: type,
+                            type,
                             data: { ...node.data, moduleType: type }
                         };
                     }
@@ -246,6 +276,7 @@ function NodeEditor_({ nodes, edges, ...props }) {
                 const tree = getTreeFromNodesEdges(nodes, edges);
                 setTreeData(tree);
             } else {
+                // Add new node
                 const zoom = reactFlowInstance.getViewport().zoom;
                 const position = reactFlowInstance.project({
                     x: event.clientX - reactFlowBounds.left - (nodeWidth / 2) * zoom,
@@ -263,6 +294,11 @@ function NodeEditor_({ nodes, edges, ...props }) {
                     position,
                     type,
                 };
+
+                setSingleNodeData({
+                    id: `${newId}`,
+                    value: 0,
+                });
 
                 reactFlowInstance.setNodes((nodes) => nodes.concat(newNode));
             }
@@ -443,44 +479,87 @@ function useInterval(callback, delay) {
     }, [delay]);
 }
 
-const randomlySelectNode = (n, nodes) => {
+const randomlySelectNode = (n, nodes, getValue) => {
     let res = {};
     for (let i = 0; i < n; i++) {
         let node = nodes[Math.floor(Math.random() * (nodes.length))];
-        // while (!res.hasOwnProperty(node.id)) {
-        //     node = nodes[Math.floor(Math.random() * (nodes.length - 1))];
-        // }
-        res[node.id] = { value: Math.random(), moduleType: node.data.moduleType };
+        while (res.hasOwnProperty(node.id)) {
+            node = nodes[Math.floor(Math.random() * (nodes.length - 1))];
+        }
+        const value = Math.min(Math.max(0, getValue(node.id)), 1);
+        res[node.id] = { value };
     }
     return res;
 }
 
+export function coerceTree(node, getValue) {
+    const newNode = {
+        id: node.id,
+        face: node.face,
+        moduleType: node.moduleType,
+        children: []
+    };
+
+    if (typeof getValue === "function") {
+        newNode.value = getValue(node.id);
+    }
+
+    node.children.forEach(child => {
+        newNode.children.push(coerceTree(child, getValue));
+    })
+
+    return newNode;
+}
+
 function useRandomPose(nodes) {
     const setNodeData = useNodeStore(state => state.setNodeData);
-    const shouldRender = useStore(state => state.shouldRender);
+    const setTreeData = useTreeStore(state => state.setTreeData);
 
     useInterval(() => {
-        let n = Math.floor(Math.random() * nodes.length);
-        let selectedNodes = randomlySelectNode(n, nodes);
+        let n = Math.max(3, Math.floor(Math.random() * nodes.length));
+        let selectedNodes = randomlySelectNode(n, nodes, (id) =>
+            useNodeStore.getState().nodeData[id].value + 0.1 * (Math.random() - 0.5)
+        );
         setNodeData(selectedNodes);
-        shouldRender();
+
+        const tree = coerceTree(useTreeStore.getState().treeData, (id) =>
+            useNodeStore.getState().nodeData[id].value
+        );
+        setTreeData(tree);
+
+        invalidate();
     }, 5000);
 }
 
+function getInitNodeDataFromTree(tree) {
+    let nodeData = {};
+
+    const dfs = (node) => {
+        nodeData[node.id] = { value: node.value };
+        for (const child of node.children) {
+            dfs(child);
+        }
+    };
+
+    dfs(tree);
+
+    return nodeData;
+}
 
 export function NodeEditor(props) {
+    // console.log('node editor');
     const tree = useTreeStore(state => state.treeData);
-    let [nodes, edges] = getNodesEdgesFromTree(tree);
-    [nodes, edges] = getLayoutedElements(nodes, edges);
+    const [nodes, edges] = useMemo(() => {
+        let [nodes, edges] = getNodesEdgesFromTree(tree);
+        return getLayoutedElements(nodes, edges);
+    }, [tree]);
 
     const setNodeData = useNodeStore(state => state.setNodeData);
+
     useEffect(() => {
-        const nodeData = {};
-        nodes.forEach(node => {
-            nodeData[node.id] = { value: node.data.value, moduleType: node.data.moduleType };
-        });
-        setNodeData(nodeData);
-    }, [nodes]);
+        const initNodeData = getInitNodeDataFromTree(tree);
+        setNodeData(initNodeData);
+    }, [tree]);
 
     // useRandomPose(nodes);
 
