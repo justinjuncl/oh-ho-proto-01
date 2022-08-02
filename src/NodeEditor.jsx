@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import ReactFlow, { Handle, Position, ReactFlowProvider, useReactFlow, applyNodeChanges, applyEdgeChanges } from "react-flow-renderer";
-import dagre from "dagre";
+import Elk from "elkjs";
 import { invalidate } from "@react-three/fiber";
 
 import { TangleText } from "TangleText";
 import { useStore, useNodeStore, useTreeStore } from "Storage";
+
 
 import "NodeEditor.css";
 
@@ -16,11 +17,77 @@ const nodeTypes = {
     K: BaseModuleNode,
     R: BaseModuleNode,
     T: BaseModuleNode,
+    Sensor: SensorNode,
 };
 
 const getId = (nodes) => {
     return Math.max(...nodes.map(node => Number(node.id))) + 1;
 }
+
+function SensorNode({ data }) {
+    const setSingleNodeData = useNodeStore(state => state.setSingleNodeData);
+    const setTreeData = useTreeStore(state => state.setTreeData);
+    const reactFlowInstance = useReactFlow();
+
+    const id = data.label.replace("Module_", "");
+    const name = data.moduleType + data.label.replace("Module_", "");
+    const moduleType = data.moduleType;
+    const defaultValue = useNodeStore.getState().nodeData[id].value;
+    // const defaultValue = data.value;
+
+    const onChange = useCallback(
+        (value) => {
+            setSingleNodeData({ id, value, moduleType });
+            invalidate();
+        },
+        [moduleType, id, setSingleNodeData]
+    );
+
+    const onBlur = useCallback(
+        (value) => {
+            const nodes = reactFlowInstance.getNodes().map((node) => {
+                if (node.id === id) {
+                    return {
+                        ...node,
+                        data: { ...node.data, value }
+                    };
+                }
+                return node;
+            });
+            const edges = reactFlowInstance.getEdges();
+            const tree = getTreeFromNodesEdges(nodes, edges);
+            setTreeData(tree);
+        },
+        [id, reactFlowInstance, setTreeData],
+    );
+
+
+    return (
+        <div className="module-node-wrapper">
+            <div className="module-node">
+                <div className="module-node-inner">
+                    <h1 className="module-node-drag-handle">{name}</h1>
+                    <label className="label-face">face</label>
+                    <div className="values">
+                        <label className="label-value-text">value</label>
+                        <TangleText
+                            className="label-value"
+                            value={defaultValue}
+                            step={0.01} min={0} max={1} decimals={2}
+                            onChange={onChange}
+                            onBlur={onBlur}
+                        />
+                    </div>
+                    <label>face</label>
+                </div>
+                <div className="handles">
+                    <Handle type="source" position={Position.Bottom} id="source_sensor_0" />
+                </div>
+            </div>
+        </div>
+    );
+}
+
 
 function BaseModuleNode({ data }) {
     const setSingleNodeData = useNodeStore(state => state.setSingleNodeData);
@@ -180,6 +247,7 @@ function NodeEditor_({ nodes, edges, ...props }) {
                 type: "select",
                 selected: true
             });
+            // console.log(getDescendantsFromNode(id, nodes, edges));
         }
         setLastSelection(id);
         reactFlowInstance.setNodes((nodes) => applyNodeChanges(changes, nodes));
@@ -278,11 +346,12 @@ function NodeEditor_({ nodes, edges, ...props }) {
             } else {
                 // Add new node
                 const zoom = reactFlowInstance.getViewport().zoom;
+                const nodes = reactFlowInstance.getNodes();
                 const position = reactFlowInstance.project({
                     x: event.clientX - reactFlowBounds.left - (nodeWidth / 2) * zoom,
                     y: event.clientY - reactFlowBounds.top - (nodeHeight / 2) * zoom,
                 });
-                const newId = getId(reactFlowInstance.getNodes());
+                const newId = getId(nodes);
 
                 const newNode = {
                     id: `${newId}`,
@@ -311,6 +380,20 @@ function NodeEditor_({ nodes, edges, ...props }) {
         event.dataTransfer.dropEffect = "move";
     }, []);
 
+    const onInit = useCallback(
+        (reactFlowInstance) => {
+            createGraphLayout(reactFlowInstance.getNodes(), reactFlowInstance.getEdges())
+                .then((nodes) => {
+                    reactFlowInstance.setNodes(nodes);
+                    const rootNode = reactFlowInstance.getNodes().find(node => node.id === "0");
+                    const x = rootNode.position.x + rootNode.width / 2;
+                    const y = rootNode.position.y + rootNode.height / 2;
+                    reactFlowInstance.setCenter(x, y, { zoom: 1, duration: 1500 });
+                })
+                .catch((err) => console.error(err));
+        }, []
+    );
+
     return (
         <div className="reactflow-wrapper" ref={reactFlowWrapper}>
             <ReactFlow
@@ -318,6 +401,7 @@ function NodeEditor_({ nodes, edges, ...props }) {
                 nodeTypes={nodeTypes}
                 defaultNodes={nodes}
                 defaultEdges={edges}
+                onInit={onInit}
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
                 onConnect={onConnect}
@@ -331,38 +415,98 @@ function NodeEditor_({ nodes, edges, ...props }) {
     );
 }
 
-const dagreGraph = new dagre.graphlib.Graph();
-dagreGraph.setDefaultEdgeLabel(() => ({}));
+const elk = new Elk({
+    defaultLayoutOptions: {
+        'elk.algorithm': 'layered',
 
-function getLayoutedElements(nodes, edges, direction = "TB") {
-    const isHorizontal = direction === "LR";
-    dagreGraph.setGraph({ rankdir: direction });
+        "elk.direction": 'DOWN',
+        "elk.spacing.nodeNode": "75",
+        "elk.edgeRouting": "ORTHOGONAL",
 
-    nodes.forEach((node) => {
-        dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
+        // "elk.layered.nodePlacement.strategy": "NodePlacementStrategy.NETWORK_SIMPLEX",
+        // "elk.layered.nodePlacement.bk.edgeStraightening": "EdgeStraighteningStrategy.NONE",
+        // "elk.layered.considerModelOrder.strategy": "OrderingStrategy.NODES_AND_EDGES",
+        // "elk.layered.considerModelOrder.components": "ComponentOrderingStrategy.FORCE_MODEL_ORDER"
+
+        "elk.layered.spacing.nodeNodeBetweenLayers": "75",
+        "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+
+        "portConstraints": "FIXED_ORDER",
+    },
+});
+
+const createGraphLayout = async (nodes: [], edges: []) => {
+    const elkNodes = [];
+    const elkEdges = [];
+
+    nodes.forEach((flowNode) => {
+        elkNodes.push({
+            id: flowNode.id,
+            width: flowNode.width,
+            height: flowNode.height,
+        });
+    });
+    edges.forEach((flowEdge) => {
+        elkEdges.push({
+            id: flowEdge.id,
+            target: flowEdge.target,
+            source: flowEdge.source,
+        });
     });
 
-    edges.forEach((edge) => {
-        dagreGraph.setEdge(edge.source, edge.target);
+    const graph = await elk.layout({
+        id: "root",
+        children: elkNodes,
+        edges: elkEdges,
+    }, {
+        logging: true,
+        measureExecutionTime: true
     });
 
-    dagre.layout(dagreGraph);
-
-    nodes.forEach((node) => {
-        const nodeWithPosition = dagreGraph.node(node.id);
-        node.targetPosition = isHorizontal ? "left" : "top";
-        node.sourcePosition = isHorizontal ? "right" : "bottom";
-
-        node.position = {
-            x: nodeWithPosition.x - nodeWidth / 2,
-            y: nodeWithPosition.y - nodeHeight / 2,
+    const positions = {};
+    graph.children.forEach((node) => {
+        positions[node.id] = {
+            x: node.x - node.width / 2,
+            y: node.y - node.height / 2
         };
-
-        return node;
     });
 
-    return [nodes, edges];
+    return nodes.map((flowNode) => {
+        flowNode.position = {
+            x: positions[flowNode.id].x,
+            y: positions[flowNode.id].y,
+        };
+        return flowNode;
+    });
 };
+
+function getDescendantsFromNode(targetNodeId, nodes, edges) {
+    const successors = {};
+    for (const edge of edges) {
+        if (successors[edge.source]) {
+            successors[edge.source].push(edge.target);
+        } else {
+            successors[edge.source] = [edge.target];
+        }
+    }
+
+    let children = [];
+    if (successors[targetNodeId])
+        children.push(...successors[targetNodeId]);
+    const descendants = [{ id: targetNodeId }];
+
+    while (children.length > 0) {
+        const new_children = [];
+        for (const child_id of children) {
+            descendants.push({ id: child_id });
+            if (successors[child_id])
+                new_children.push(...successors[child_id]);
+        }
+        children = new_children;
+    }
+
+    return descendants;
+}
 
 function getNodesEdgesFromTree(tree) {
     let nodes = [];
@@ -374,14 +518,19 @@ function getNodesEdgesFromTree(tree) {
             data: {
                 label: `Module_${node.id}`,
                 value: node.value,
-                moduleType: node.moduleType
+                moduleType: node.moduleType,
+                face: node.face,
             },
             position: { x: 0, y: 0 },
             type: node.moduleType,
             dragHandle: ".module-node-drag-handle",
         });
 
-        for (const child of node.children) {
+        for (const child of node.children.sort((a, b) =>
+            a.face - b.face
+        )) {
+            dfs(child);
+
             edges.push({
                 id: `E_${node.id}-${child.id}`,
                 source: `${node.id}`,
@@ -389,8 +538,6 @@ function getNodesEdgesFromTree(tree) {
                 target: `${child.id}`,
                 targetHandle: "target_face",
             });
-
-            dfs(child);
         }
     };
 
@@ -550,8 +697,8 @@ export function NodeEditor(props) {
     // console.log('node editor');
     const tree = useTreeStore(state => state.treeData);
     const [nodes, edges] = useMemo(() => {
-        let [nodes, edges] = getNodesEdgesFromTree(tree);
-        return getLayoutedElements(nodes, edges);
+        return getNodesEdgesFromTree(tree);
+        // return getLayoutedElements(nodes, edges);
     }, [tree]);
 
     const setNodeData = useNodeStore(state => state.setNodeData);

@@ -93,16 +93,17 @@
     position: relative;
     writing-mode: vertical-rl;
     color: black;
-    line-height: 25px;
+    line-height: 36px;
     cursor: pointer;
     width: 36px;
-    transform: translateX(calc(-600px + 18px));
+    transform: translateX(calc(-600px + 18px)) rotate(180deg);
     transition: transform 0.3s ease-in-out;
 
     pointer-events: all;
-    border-top-left-radius: 20px;
-    border-bottom-left-radius: 20px;
+    border-top-right-radius: 20px;
+    border-bottom-right-radius: 20px;
     padding: 10px 2px;
+    font-style: italic;
 
     background-color: rgba(255, 255, 255, 0.6);
 
@@ -114,17 +115,12 @@
 }
 
 .button.hide {
-    transform: translateX(0);
+    transform: rotate(180deg);
 }
 
 .left .button {
     transform: translateX(calc(600px - 18px));
 
-    border-top-left-radius: unset;
-    border-bottom-left-radius: unset;
-    border-top-right-radius: 20px;
-    border-bottom-right-radius: 20px;
-    
     -webkit-filter: drop-shadow(10px 10px 15px rgba(0, 0, 0, 0.25));
     filter: drop-shadow(10px 10px 15px rgba(0, 0, 0, 0.25));
 }
