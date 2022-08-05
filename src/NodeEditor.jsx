@@ -3,6 +3,7 @@ import ReactFlow, { Handle, Position, ReactFlowProvider, useReactFlow, applyNode
 import Elk from "elkjs";
 import { invalidate } from "@react-three/fiber";
 
+import Draggable from "react-draggable";
 import { TangleText } from "TangleText";
 import { useStore, useNodeStore, useTreeStore } from "Storage";
 
@@ -10,11 +11,11 @@ import { useStore, useNodeStore, useTreeStore } from "Storage";
 import "NodeEditor.css";
 
 
-const nodeWidth = 122;
-const nodeHeight = 76;
+const nodeWidth = 102;
+const nodeHeight = 47;
 
 const nodeTypes = {
-    K: BaseModuleNode,
+    K: KModuleNode,
     R: BaseModuleNode,
     T: BaseModuleNode,
     Sensor: SensorNode,
@@ -152,11 +153,10 @@ function BaseModuleNode({ data }) {
             <div className={`module-node ${dragHover ? 'drag-hover' : ''}`}
             >
                 <Handle type="target" position={Position.Top} id="target_face" />
-                <Handle type="target" position={Position.Left} id="target_value" />
                 <div className="module-node-inner">
                     <h1 className="module-node-drag-handle">{name}</h1>
-                    <label className="label-face">face</label>
                     <div className="values">
+                        <Handle type="target" position={Position.Left} id="target_value" />
                         <label className="label-value-text">value</label>
                         <TangleText
                             className="label-value"
@@ -166,7 +166,6 @@ function BaseModuleNode({ data }) {
                             onBlur={onBlur}
                         />
                     </div>
-                    <label>face</label>
                 </div>
                 <div className="handles">
                     <Handle type="source" position={Position.Bottom} id="source_0" />
@@ -179,6 +178,49 @@ function BaseModuleNode({ data }) {
         </div>
     );
 }
+
+function KModuleNode({ data }) {
+    const name = data.moduleType + data.label.replace("Module_", "");
+
+    const [dragTarget, setDragTarget] = useState(null);
+    const [dragHover, setDragHover] = useState(false);
+
+    return (
+        <div className="module-node-wrapper"
+            onDragEnter={(event) => {
+                event.stopPropagation();
+                event.preventDefault();
+                setDragTarget(event.target);
+                setDragHover(true);
+                return false;
+            }}
+            onDragLeave={(event) => {
+                if (dragTarget === event.target) {
+                    event.stopPropagation();
+                    event.preventDefault();
+                    setDragHover(false);
+                }
+            }}
+            onDrop={(event) => {
+                setDragHover(false);
+            }}
+        >
+            <div className={`module-node ${dragHover ? 'drag-hover' : ''}`}
+            >
+                <Handle type="target" position={Position.Top} id="target_face" />
+                <div className="module-node-inner">
+                    <h1 className="module-node-drag-handle">{name}</h1>
+                </div>
+                <div className="handles">
+                    <Handle type="source" position={Position.Bottom} id="source_0" />
+                    <Handle type="source" position={Position.Bottom} id="source_1" />
+                    <Handle type="source" position={Position.Bottom} id="source_2" />
+                </div>
+            </div>
+        </div>
+    );
+}
+
 
 function ModulesList() {
     const onDragStart = (event, nodeType) => {
@@ -199,19 +241,39 @@ function ModulesList() {
         event.dataTransfer.effectAllowed = "move";
     };
 
+    const dragRef = useRef();
+    const rowRef = useRef();
+
+    const onClick = useCallback((e) => {
+        if (rowRef.current) {
+            rowRef.current.classList.toggle('opened');
+        }
+    }, []);
+
     return (
-        <div className="modules-list">
-            {Object.keys(nodeTypes).map((nodeType) => (
-                <div
-                    key={nodeType}
-                    className={`modules-list-item modules-list-item-${nodeType}`}
-                    onDragStart={(event) => onDragStart(event, nodeType)}
-                    draggable
-                >
-                    {nodeType} Module
+        <Draggable handle=".module-node-drag-handle" nodeRef={dragRef} bounds="parent">
+            <div className="modules-list" ref={dragRef}>
+                <div className="modules-list-inner">
+                    <div className="modules-list-header">
+                        <h1 className="module-node-drag-handle">Add node</h1>
+                        <span onClick={onClick}>=</span>
+                    </div>
+
+                    <div className="modules-list-row opened" ref={rowRef}>
+                        {Object.keys(nodeTypes).map((nodeType) => (
+                            <div
+                                key={nodeType}
+                                className={`modules-list-item modules-list-item-${nodeType}`}
+                                onDragStart={(event) => onDragStart(event, nodeType)}
+                                draggable
+                            >
+                                <img src={require(`assets/icon_module_${nodeType.toLowerCase()}.png`)} alt="" />
+                            </div>
+                        ))}
+                    </div>
                 </div>
-            ))}
-        </div>
+            </div>
+        </Draggable>
     );
 }
 
@@ -458,9 +520,6 @@ const createGraphLayout = async (nodes: [], edges: []) => {
         id: "root",
         children: elkNodes,
         edges: elkEdges,
-    }, {
-        logging: true,
-        measureExecutionTime: true
     });
 
     const positions = {};
