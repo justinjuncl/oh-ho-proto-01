@@ -3,7 +3,7 @@
     --highlight-r-color: #eee;
 }
 
-[draggable=true] {
+[draggable="true"] {
     cursor: move;
 }
 
@@ -34,7 +34,8 @@
     box-shadow: 0 0 10px 5px var(--highlight-r-color);
 }
 
-.react-flow__edge-path, .react-flow__connection-path {
+.react-flow__edge-path,
+.react-flow__connection-path {
     stroke: #000;
     stroke-width: 1.5;
 }
@@ -78,7 +79,7 @@
 }
 
 .module-node h1:active {
-    cursor: grabbing
+    cursor: grabbing;
 }
 
 .module-node .label-face {
@@ -114,7 +115,8 @@
     border-radius: 100px;
 }
 
-.module-node label, .module-node input {
+.module-node label,
+.module-node input {
     width: 54px;
     text-align: left;
     display: inline-block;
@@ -142,7 +144,7 @@
     box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.25);
     flex: none;
     order: 0;
-    position:relative;
+    position: relative;
     border-radius: 0 0 100% 100% / 0 0 200% 200%;
     border: 0;
     width: 8px;
@@ -195,11 +197,11 @@
     overflow: hidden;
 
     max-height: 0;
-    transition: height .3s ease-in, max-height .3s ease-in;
+    transition: height 0.3s ease-in, max-height 0.3s ease-in;
 }
 
 .modules-list-row.opened {
-    transition: height .3s ease-in, max-height .3s ease-in;
+    transition: height 0.3s ease-in, max-height 0.3s ease-in;
     max-height: 100px;
 }
 
@@ -252,4 +254,3 @@
     margin-right: 5px;
     cursor: pointer;
 }
-
