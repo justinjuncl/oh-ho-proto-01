@@ -2,50 +2,7 @@ import { useState } from "react";
 import create from "zustand";
 import { persist, devtools } from "zustand/middleware";
 
-export const exampleTree = {
-    id: 0,
-    face: 0,
-    moduleType: "T",
-    value: 0,
-    children: [{
-        id: 15,
-        face: 2,
-        moduleType: "R",
-        value: 0,
-        children: [{
-            id: 25,
-            face: 1,
-            moduleType: "R",
-            value: 0,
-            children: [],
-        }],
-    }, {
-        id: 16,
-        face: 3,
-        moduleType: "R",
-        value: 0,
-        children: [{
-            id: 26,
-            face: 1,
-            moduleType: "R",
-            value: 0,
-            children: [],
-        }],
-
-    }],
-};
-
-export const exampleColor = {
-    background: "#111111",
-    axis: "#151515",
-    grid: "#060606",
-    T_start: "#85AA85",
-    T_end: "#384938",
-    T_highlight: "#282cce",
-    R_start: "#85AA85",
-    R_end: "#384938",
-    R_highlight: "#e5851b",
-};
+import exampleData from "assets/exampleData.json";
 
 // https://www.30secondsofcode.org/react/s/use-local-storage
 export const useLocalStorage = (key, defaultValue) => {
@@ -85,7 +42,7 @@ export const useStore = create(devtools(set => ({
 
 export const useTreeStore = create(devtools(persist(
     (set, get) => ({
-        treeData: exampleTree,
+        treeData: exampleData.tree,
         setTreeData: (treeData) => set({ treeData }),
     }),
     { name: "treeData" }
@@ -93,7 +50,7 @@ export const useTreeStore = create(devtools(persist(
 
 export const useColorStore = create(devtools(persist(
     (set, get) => ({
-        colorData: exampleColor,
+        colorData: exampleData.color,
         setColorData: (colorData) => set({ colorData }),
     }),
     { name: "colorData" }
