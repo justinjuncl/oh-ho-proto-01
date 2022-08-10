@@ -5,8 +5,8 @@ import { persist, devtools } from "zustand/middleware";
 import exampleData from "assets/exampleData.json";
 
 const exampleSensorData = {
-    nodeData: {},
-    edgeData: {
+    nodes: {},
+    edges: {
         "E_s0-0": {
             source: "s0",
             sourceHandle: "source_0",
@@ -51,85 +51,85 @@ export const useStore = create(devtools(set => ({
 
 export const useTreeStore = create(devtools(persist(
     (set, get) => ({
-        treeData: exampleData.tree,
-        setTreeData: (treeData) => set({ treeData }),
+        tree: exampleData.tree,
+        setTree: (tree) => set({ tree }),
     }),
-    { name: "treeData" }
+    { name: "tree" }
 )));
 
 export const useColorStore = create(devtools(persist(
     (set, get) => ({
-        colorData: exampleData.color,
-        setColorData: (colorData) => set({ colorData }),
+        color: exampleData.color,
+        setColor: (color) => set({ color }),
     }),
-    { name: "colorData" }
+    { name: "color" }
 )));
 
 export const useNodeStore = create(devtools(persist(
     (set, get) => ({
-        nodeData: {},
-        setNodeData: (nodes) => {
+        nodes: {},
+        setNodes: (nodes) => {
             set(state => ({
-                nodeData: {
-                    ...state.nodeData,
+                nodes: {
+                    ...state.nodes,
                     ...nodes
                 }
             }));
         },
-        setSingleNodeData: (node) => {
+        setNode: (node) => {
             set(state => ({
-                nodeData: {
-                    ...state.nodeData,
+                nodes: {
+                    ...state.nodes,
                     [node.id]: { value: node.value }
                 }
             }));
         },
-        removeNodeData: (id) => {
+        removeNode: (id) => {
             set(state => ({
-                nodeData: (({ [id]: _, ...o }) => o)(state.nodeData)
+                nodes: (({ [id]: _, ...o }) => o)(state.nodes)
             }));
         }
     }),
-    { name: "nodeData" }
+    { name: "node" }
 )));
 
 export const useSensorStore = create(devtools(persist(
     (set, get) => ({
-        nodeData: exampleSensorData.nodeData,
-        setNodeData: (nodes) => {
+        nodes: exampleSensorData.nodes,
+        setNodes: (nodes) => {
             set(state => ({
-                nodeData: {
-                    ...state.nodeData,
+                nodes: {
+                    ...state.nodes,
                     ...nodes
                 }
             }));
         },
-        setSingleNodeData: (node) => {
+        setNode: (node) => {
             set(state => ({
-                nodeData: {
-                    ...state.nodeData,
+                nodes: {
+                    ...state.nodes,
                     [node.id]: { value: node.value }
                 }
             }));
         },
-        removeNodeData: (id) => {
+        removeNode: (id) => {
             set(state => ({
-                nodeData: (({ [id]: _, ...o }) => o)(state.nodeData)
+                nodes: (({ [id]: _, ...o }) => o)(state.nodes)
             }));
         },
-        edgeData: exampleSensorData.edgeData,
-        setEdgeData: (edges) => {
+        edges: exampleSensorData.edges,
+        setEdges: (edges) => {
             set(state => ({
-                edgeData: {
-                    ...state.edgeData,
+                edges: {
+                    ...state.edges,
                     ...edges
                 }
             }));
         },
-        setSingleEdgeData: (edge) => {
+        setEdge: (edge) => {
             set(state => ({
-                edgeData: {
-                    ...state.edgeData,
+                edges: {
+                    ...state.edges,
                     [edge.id]: {
                         source: edge.source,
                         sourceHandle: edge.sourceHandle,
@@ -140,13 +140,13 @@ export const useSensorStore = create(devtools(persist(
                 }
             }));
         },
-        removeEdgeData: (id) => {
+        removeEdge: (id) => {
             set(state => ({
-                edgeData: (({ [id]: _, ...o }) => o)(state.edgeData)
+                edges: (({ [id]: _, ...o }) => o)(state.edges)
             }));
         }
     }),
-    { name: "sensorData" }
+    { name: "sensor" }
 )));
 
 export function download(data, filename, type) {

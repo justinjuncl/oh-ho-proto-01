@@ -100,7 +100,7 @@ function useAnimations(moduleType, id, getTarget) {
 }
 
 function useColor(moduleType) {
-    const color = useColorStore(state => state.colorData);
+    const color = useColorStore(state => state.color);
     const startColor = color[moduleType + "_start"];
     const endColor = color[moduleType + "_end"];
     const highlightColor = color[moduleType + "_highlight"];
@@ -262,7 +262,7 @@ function ModuleK({ moduleType, face, id, parentModuleType, ...props }) {
 function BaseModule({ moduleType, face, id, parentModuleType, ...props }) {
     // console.log(moduleType, id);
     const groupRef = useAnimations(moduleType, id, () =>
-        useNodeStore.getState().nodeData[id].value * 0.99999
+        useNodeStore.getState().nodes[id].value * 0.99999
     );
 
     const name = "Module_" + id;

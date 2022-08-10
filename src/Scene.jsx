@@ -25,12 +25,12 @@ export default function Ball(props) {
 
 
 export const Scene = (props) => {
-    const color = useColorStore(state => state.colorData);
+    const color = useColorStore(state => state.color);
     const background = color["background"];
     const axis = color["axis"];
     const grid = color["grid"];
 
-    const tree = useTreeStore(state => state.treeData);
+    const tree = useTreeStore(state => state.tree);
     const setSelection = useStore(state => state.setSelection);
 
     const memoizedNode = useMemo(() => coerceTree(tree), [tree]);

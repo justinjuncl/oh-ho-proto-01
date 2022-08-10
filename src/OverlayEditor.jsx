@@ -16,10 +16,10 @@ export const OverlayEditor = (props) => {
 
     const moduleSelection = useStore(state => state.selection);
 
-    const setTreeData = useTreeStore(state => state.setTreeData);
+    const setTree = useTreeStore(state => state.setTree);
 
-    const colorData = useColorStore(state => state.colorData);
-    const setColorData = useColorStore(state => state.setColorData);
+    const color = useColorStore(state => state.color);
+    const setColor = useColorStore(state => state.setColor);
 
     const [, setDebug] = useControls(() => ({
         Selection: {
@@ -28,16 +28,16 @@ export const OverlayEditor = (props) => {
         }
     }), { store: storeDebug }, []);
 
-    const [color, setColorControls] = useControls(() => ({
-        background: colorData.background,
-        axis: colorData.axis,
-        grid: colorData.grid,
-        T_start: colorData.T_start,
-        T_end: colorData.T_end,
-        T_highlight: colorData.T_highlight,
-        R_start: colorData.R_start,
-        R_end: colorData.R_end,
-        R_highlight: colorData.R_highlight,
+    const [_color, setColorControls] = useControls(() => ({
+        background: color.background,
+        axis: color.axis,
+        grid: color.grid,
+        T_start: color.T_start,
+        T_end: color.T_end,
+        T_highlight: color.T_highlight,
+        R_start: color.R_start,
+        R_end: color.R_end,
+        R_highlight: color.R_highlight,
     }), { store: storeColor }, []);
 
     const [{ userLoadedTreeJSON }, setUserLoadedTreeJSON] = useControls(() => ({
@@ -46,7 +46,7 @@ export const OverlayEditor = (props) => {
             image: undefined
         },
         "Export JSON": button(() => {
-            download({ tree: useTreeStore.getState().treeData, color: useColorStore.getState().colorData }, "export.json", "application/json");
+            download({ tree: useTreeStore.getState().tree, color: useColorStore.getState().color }, "export.json", "application/json");
         }),
     }), { store: storeColor }, []);
 
@@ -71,25 +71,25 @@ export const OverlayEditor = (props) => {
 
                 if (result.color) {
                     setColorControls(result.color);
-                    setColorData(result.color);
+                    setColor(result.color);
                 }
                 if (result.tree) {
-                    setTreeData(result.tree);
+                    setTree(result.tree);
                 }
             }
 
             reader.readAsText(userLoadedTreeJSON);
         }
-    }, [setColorControls, setColorData, setTreeData, setUserLoadedTreeJSON, userLoadedTreeJSON]);
+    }, [setColorControls, setColor, setTree, setUserLoadedTreeJSON, userLoadedTreeJSON]);
 
     useLayoutEffect(() => {
-        setColorData(color);
-    }, [setColorData, color]);
+        setColor(_color);
+    }, [setColor, _color]);
 
     useLayoutEffect(() => {
-        setHighlightColor(color.T_highlight, "t");
-        setHighlightColor(color.R_highlight, "r");
-    }, [color.T_highlight, color.R_highlight]);
+        setHighlightColor(_color.T_highlight, "t");
+        setHighlightColor(_color.R_highlight, "r");
+    }, [_color.T_highlight, _color.R_highlight]);
 
     return (
         <div

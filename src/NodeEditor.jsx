@@ -99,22 +99,22 @@ function SensorNode({ data }) {
 
 
 function BaseModuleNode({ data }) {
-    const setSingleNodeData = useNodeStore(state => state.setSingleNodeData);
-    const setTreeData = useTreeStore(state => state.setTreeData);
+    const setNode = useNodeStore(state => state.setNode);
+    const setTree = useTreeStore(state => state.setTree);
     const reactFlowInstance = useReactFlow();
 
     const id = data.label.replace("Module_", "");
     const name = data.moduleType + data.label.replace("Module_", "");
     const moduleType = data.moduleType;
-    const defaultValue = useNodeStore.getState().nodeData[id].value;
+    const defaultValue = useNodeStore.getState().nodes[id].value;
     // const defaultValue = data.value;
 
     const onChange = useCallback(
         (value) => {
-            setSingleNodeData({ id, value, moduleType });
+            setNode({ id, value, moduleType });
             invalidate();
         },
-        [moduleType, id, setSingleNodeData]
+        [moduleType, id, setNode]
     );
 
     const onBlur = useCallback(
@@ -130,9 +130,9 @@ function BaseModuleNode({ data }) {
             });
             const edges = reactFlowInstance.getEdges();
             const tree = getTreeFromNodesEdges(nodes, edges);
-            setTreeData(tree);
+            setTree(tree);
         },
-        [id, reactFlowInstance, setTreeData],
+        [id, reactFlowInstance, setTree],
     );
 
     const [dragTarget, setDragTarget] = useState(null);
@@ -290,9 +290,8 @@ function NodeEditor_({ nodes, edges, ...props }) {
         background: "white"
     };
 
-    const setTreeData = useTreeStore(state => state.setTreeData);
-
-    const setSingleNodeData = useNodeStore(state => state.setSingleNodeData);
+    const setTree = useTreeStore(state => state.setTree);
+    const setNode = useNodeStore(state => state.setNode);
 
     const selection = useStore(state => state.selection);
     const setSelection = useStore(state => state.setSelection);
@@ -353,15 +352,15 @@ function NodeEditor_({ nodes, edges, ...props }) {
             if (changes[0]?.type === "select") return;
             for (const change of changes) {
                 if (change.id.includes("E_s") && change.type === "remove") {
-                    useSensorStore.getState().removeEdgeData(change.id);
+                    useSensorStore.getState().removeEdge(change.id);
                 }
             }
             const nodes = reactFlowInstance.getNodes();
             const edges = reactFlowInstance.getEdges();
             const tree = getTreeFromNodesEdges(nodes, edges);
-            setTreeData(tree);
+            setTree(tree);
         },
-        [reactFlowInstance, setTreeData]
+        [reactFlowInstance, setTree]
     );
 
     const onConnect = useCallback(
@@ -384,8 +383,8 @@ function NodeEditor_({ nodes, edges, ...props }) {
             if (edge.source.includes("s")) {
                 edge.type = edge.sourceHandle.replace("source_", "Sensor");
 
-                const setSingleEdgeData = useSensorStore.getState().setSingleEdgeData;;
-                setSingleEdgeData(edge);
+                const setEdge = useSensorStore.getState().setEdge;
+                setEdge(edge);
             }
 
             reactFlowInstance.setEdges((edges) => applyEdgeChanges(changes, edges));
@@ -394,9 +393,9 @@ function NodeEditor_({ nodes, edges, ...props }) {
             const nodes = reactFlowInstance.getNodes();
             edges = reactFlowInstance.getEdges();
             const tree = getTreeFromNodesEdges(nodes, edges);
-            setTreeData(tree);
+            setTree(tree);
         },
-        [reactFlowInstance, setTreeData]
+        [reactFlowInstance, setTree]
     );
 
     const onDrop = useCallback(
@@ -427,7 +426,7 @@ function NodeEditor_({ nodes, edges, ...props }) {
                 });
                 const edges = reactFlowInstance.getEdges();
                 const tree = getTreeFromNodesEdges(nodes, edges);
-                setTreeData(tree);
+                setTree(tree);
             } else {
                 // Add new node
                 const zoom = reactFlowInstance.getViewport().zoom;
@@ -449,7 +448,7 @@ function NodeEditor_({ nodes, edges, ...props }) {
                     type,
                 };
 
-                setSingleNodeData({
+                setNode({
                     id: `${newId}`,
                     value: 0,
                 });
@@ -457,7 +456,7 @@ function NodeEditor_({ nodes, edges, ...props }) {
                 reactFlowInstance.setNodes((nodes) => nodes.concat(newNode));
             }
         },
-        [reactFlowInstance, setTreeData]
+        [reactFlowInstance, setTree]
     );
 
     const onDragOver = useCallback((event) => {
@@ -634,8 +633,8 @@ function getNodesEdgesFromTree(tree) {
         });
     }
 
-    const sensorEdgeData = useSensorStore.getState().edgeData;
-    for (const [edge_id, edge] of Object.entries(sensorEdgeData)) {
+    const sensorEdges = useSensorStore.getState().edges;
+    for (const [edge_id, edge] of Object.entries(sensorEdges)) {
         edges.push({
             id: edge_id,
             source: edge.source,
@@ -766,30 +765,30 @@ export function coerceTree(node, getValue) {
 }
 
 function useRandomPose(nodes) {
-    const setNodeData = useNodeStore(state => state.setNodeData);
-    const setTreeData = useTreeStore(state => state.setTreeData);
+    const setNodes = useNodeStore(state => state.setNodes);
+    const setTree = useTreeStore(state => state.setTree);
 
     useInterval(() => {
         let n = Math.max(3, Math.floor(Math.random() * nodes.length));
         let selectedNodes = randomlySelectNode(n, nodes, (id) =>
-            useNodeStore.getState().nodeData[id].value + 0.1 * (Math.random() - 0.5)
+            useNodeStore.getState().nodes[id].value + 0.1 * (Math.random() - 0.5)
         );
-        setNodeData(selectedNodes);
+        setNodes(selectedNodes);
 
-        const tree = coerceTree(useTreeStore.getState().treeData, (id) =>
-            useNodeStore.getState().nodeData[id].value
+        const tree = coerceTree(useTreeStore.getState().tree, (id) =>
+            useNodeStore.getState().node[id].value
         );
-        setTreeData(tree);
+        setTree(tree);
 
         invalidate();
     }, 5000);
 }
 
-function getInitNodeDataFromTree(tree) {
-    let nodeData = {};
+function getInitNodesFromTree(tree) {
+    let nodes = {};
 
     const dfs = (node) => {
-        nodeData[node.id] = { value: node.value };
+        nodes[node.id] = { value: node.value };
         for (const child of node.children) {
             dfs(child);
         }
@@ -797,16 +796,16 @@ function getInitNodeDataFromTree(tree) {
 
     dfs(tree);
 
-    return nodeData;
+    return nodes;
 }
 
 export function NodeEditor(props) {
     const [nodes, edges] = useMemo(() => {
-        const tree = useTreeStore.getState().treeData;
-        const initNodeData = getInitNodeDataFromTree(tree);
-        const setNodeData = useNodeStore.getState().setNodeData;
+        const tree = useTreeStore.getState().tree;
+        const initNodes = getInitNodesFromTree(tree);
+        const setNodes = useNodeStore.getState().setNodes;
 
-        setNodeData(initNodeData);
+        setNodes(initNodes);
         return getNodesEdgesFromTree(tree);
     }, []);
 
