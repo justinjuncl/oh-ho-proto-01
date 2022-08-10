@@ -1,6 +1,13 @@
-:root {
+.react-flow__renderer {
     --highlight-t-color: #eee;
     --highlight-r-color: #eee;
+
+    --sensor0-stroke-color: red;
+    --sensor1-stroke-color: green;
+    --sensor2-stroke-color: blue;
+
+    --default-stroke-color: black;
+    --highlight-stroke-color: var(--highlight-r-color);
 }
 
 [draggable="true"] {
@@ -36,14 +43,14 @@
 
 .react-flow__edge-path,
 .react-flow__connection-path {
-    stroke: #000;
+    stroke: var(--default-stroke-color);
     stroke-width: 1.5;
 }
 
 .react-flow__edge.selected .react-flow__edge-path {
-    stroke: var(--highlight-r-color);
-    -webkit-filter: drop-shadow(0 0 5px var(--highlight-r-color));
-    filter: drop-shadow(0 0 5px var(--highlight-r-color));
+    stroke: var(--highlight-stroke-color);
+    -webkit-filter: drop-shadow(0 0 5px var(--highlight-stroke-color));
+    filter: drop-shadow(0 0 5px var(--highlight-stroke-color));
 }
 
 .module-node {
@@ -99,8 +106,6 @@
 }
 
 .module-node .label-value {
-    padding: 2px;
-
     width: 40px;
     height: 11px;
     line-height: 11px;
@@ -173,8 +178,56 @@
 .module-node [data-handleid="target_value"] {
     position: relative;
     flex-shrink: 0;
-    transform: translate(-50%, 1.5px);
+    transform: translate(-50%, 1px);
 }
+
+/* SENSOR MODULE NODE */
+
+.module-node.sensor {
+    width: 102px;
+    height: 100%;
+}
+
+.module-node.sensor .handles {
+    flex-direction: column;
+    padding: 8px 8px;
+    gap: 6px;
+}
+
+.module-node.sensor .values {
+    flex-direction: row-reverse;
+}
+
+.module-node.sensor input {
+    width: unset;
+    transform: translateX(100%);
+}
+
+.module-node.sensor .react-flow__handle.source {
+    background: #000000;
+    box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.25);
+    position: relative;
+
+    border-radius: 0 200% 200% 0 / 0 100% 100% 0;
+    border: 0;
+    width: 4px;
+    height: 8px;
+
+    transform: translateX(calc(150% + 8px));
+}
+
+/* SENSOR EDGE */
+.react-flow__edge-Sensor0 path {
+    stroke: var(--sensor0-stroke-color);
+}
+.react-flow__edge-Sensor1 path {
+    stroke: var(--sensor1-stroke-color);
+}
+.react-flow__edge-Sensor2 path {
+    stroke: var(--sensor2-stroke-color);
+}
+
+/* MODULES LIST */
 
 .modules-list {
     position: absolute;

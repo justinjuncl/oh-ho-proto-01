@@ -26,7 +26,7 @@ export const OverlayEditor = (props) => {
             value: JSON.stringify(moduleSelection, null, 2),
             editable: false
         }
-    }), { store: storeDebug }, [moduleSelection]);
+    }), { store: storeDebug }, []);
 
     const [color, setColorControls] = useControls(() => ({
         background: colorData.background,
@@ -38,7 +38,7 @@ export const OverlayEditor = (props) => {
         R_start: colorData.R_start,
         R_end: colorData.R_end,
         R_highlight: colorData.R_highlight,
-    }), { store: storeColor }, [colorData]);
+    }), { store: storeColor }, []);
 
     const [{ userLoadedTreeJSON }, setUserLoadedTreeJSON] = useControls(() => ({
         userLoadedTreeJSON: {
@@ -48,7 +48,7 @@ export const OverlayEditor = (props) => {
         "Export JSON": button(() => {
             download({ tree: useTreeStore.getState().treeData, color: useColorStore.getState().colorData }, "export.json", "application/json");
         }),
-    }), { store: storeColor });
+    }), { store: storeColor }, []);
 
     useLayoutEffect(() => {
         setDebug({

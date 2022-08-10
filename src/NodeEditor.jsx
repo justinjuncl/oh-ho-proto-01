@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
-import ReactFlow, { Handle, Position, ReactFlowProvider, useReactFlow, applyNodeChanges, applyEdgeChanges } from "react-flow-renderer";
+import ReactFlow, { Handle, Position, ReactFlowProvider, useReactFlow, applyNodeChanges, applyEdgeChanges, getBezierPath, addEdge } from "react-flow-renderer";
 import Elk from "elkjs";
 import { invalidate } from "@react-three/fiber";
 
 import Draggable from "react-draggable";
 import { TangleText } from "TangleText";
-import { useStore, useNodeStore, useTreeStore } from "Storage";
+import { useStore, useNodeStore, useSensorStore, useTreeStore } from "Storage";
 
 
 import "NodeEditor.css";
@@ -21,68 +21,76 @@ const nodeTypes = {
     Sensor: SensorNode,
 };
 
+const edgeTypes = {
+    Sensor0: SensorEdge(0),
+    Sensor1: SensorEdge(1),
+    Sensor2: SensorEdge(2),
+};
+
 const getId = (nodes) => {
     return Math.max(...nodes.map(node => Number(node.id))) + 1;
 }
 
+function ConnectionLine({ sourceX, sourceY, sourcePosition, targetPosition, targetX, targetY, connectionLineType, connectionLineStyle, fromNode, fromHandle, }) {
+    const isSensor = fromNode.type === "Sensor";
+    const style = {};
+
+    if (isSensor) {
+        const source_id = Number(fromHandle.id.replace("source_", ""));
+        style.stroke = `var(--sensor${source_id}-stroke-color)`;
+    } else {
+        style.stroke = "var(--default-stroke-color)"
+    }
+
+    const d = getBezierPath({ sourceX, sourceY, sourcePosition, targetPosition, targetX, targetY, });
+
+    return (
+        <path fill="none" style={style} strokeWidth={1.5} d={d} />
+    );
+}
+
+function SensorEdge(sensor_id) {
+    return ({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, markerEnd }) => {
+        const edgePath = getBezierPath({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, });
+
+        return (
+            <path id={id} className="react-flow__edge-path" d={edgePath} markerEnd={markerEnd} />
+        );
+    }
+}
+
 function SensorNode({ data }) {
-    const setSingleNodeData = useNodeStore(state => state.setSingleNodeData);
-    const setTreeData = useTreeStore(state => state.setTreeData);
-    const reactFlowInstance = useReactFlow();
+    const isValidConnection = useCallback((connection) => (
+        connection.targetHandle === "target_value"
+    ), []);
 
-    const id = data.label.replace("Module_", "");
-    const name = data.moduleType + data.label.replace("Module_", "");
-    const moduleType = data.moduleType;
-    const defaultValue = useNodeStore.getState().nodeData[id].value;
-    // const defaultValue = data.value;
-
-    const onChange = useCallback(
-        (value) => {
-            setSingleNodeData({ id, value, moduleType });
-            invalidate();
-        },
-        [moduleType, id, setSingleNodeData]
-    );
-
-    const onBlur = useCallback(
-        (value) => {
-            const nodes = reactFlowInstance.getNodes().map((node) => {
-                if (node.id === id) {
-                    return {
-                        ...node,
-                        data: { ...node.data, value }
-                    };
-                }
-                return node;
-            });
-            const edges = reactFlowInstance.getEdges();
-            const tree = getTreeFromNodesEdges(nodes, edges);
-            setTreeData(tree);
-        },
-        [id, reactFlowInstance, setTreeData],
-    );
-
+    const onChange = useCallback((e) => {
+        console.log(e.target.name, e.target.checked);
+    }, []);
 
     return (
         <div className="module-node-wrapper">
-            <div className="module-node">
+            <div className="module-node sensor">
                 <div className="module-node-inner">
-                    <h1 className="module-node-drag-handle">{name}</h1>
-                    <label className="label-face">face</label>
-                    <div className="values">
-                        <label className="label-value-text">value</label>
-                        <TangleText
-                            className="label-value"
-                            value={defaultValue}
-                            step={0.01} min={0} max={1} decimals={2}
-                            onChange={onChange}
-                            onBlur={onBlur}
-                        />
+                    <h1 className="module-node-drag-handle">{data.label}</h1>
+                    <div className="handles">
+                        <div className="values">
+                            <Handle type="source" position={Position.Right} isValidConnection={isValidConnection} id="source_0" />
+                            <input type="checkbox" name="source_0" onChange={onChange}></input>
+                            <label className="label-value-text">Source 0</label>
+                        </div>
+                        <div className="values">
+                            <Handle type="source" position={Position.Right} isValidConnection={isValidConnection} id="source_1" />
+                            <input type="checkbox" name="source_1" onChange={onChange}></input>
+                            <label className="label-value-text">Source 1</label>
+                        </div>
+                        <div className="values">
+                            <Handle type="source" position={Position.Right} isValidConnection={isValidConnection} id="source_2" />
+                            <input type="checkbox" name="source_2" onChange={onChange}></input>
+                            <label className="label-value-text">Source 2</label>
+                        </div>
                     </div>
-                    <label>face</label>
-                </div>
-                <div className="handles">
-                    <Handle type="source" position={Position.Bottom} id="source_sensor_0" />
+
                 </div>
             </div>
         </div>
@@ -327,23 +335,27 @@ function NodeEditor_({ nodes, edges, ...props }) {
                                 name: "Module_" + change.id,
                             },
                         });
-                        selected = true;
                         setLastSelection(change.id);
+                        selected = true;
                     } else if (!selected) {
                         setSelection({});
                         setLastSelection("");
                     }
                 }
             }
-            reactFlowInstance.setNodes((ns) => applyNodeChanges(changes, ns));
             invalidate();
         },
-        [reactFlowInstance, setSelection]
+        [setSelection]
     );
 
     const onEdgesChange = useCallback(
         (changes) => {
             if (changes[0]?.type === "select") return;
+            for (const change of changes) {
+                if (change.id.includes("E_s") && change.type === "remove") {
+                    useSensorStore.getState().removeEdgeData(change.id);
+                }
+            }
             const nodes = reactFlowInstance.getNodes();
             const edges = reactFlowInstance.getEdges();
             const tree = getTreeFromNodesEdges(nodes, edges);
@@ -357,16 +369,27 @@ function NodeEditor_({ nodes, edges, ...props }) {
             const source = edge.source;
             const sourceHandle = edge.sourceHandle;
             const target = edge.target;
+            const targetHandle = edge.targetHandle;
             let edges = reactFlowInstance.getEdges();
 
-            const changes = [];
+            edge.id = `E_${edge.source}-${edge.target}`;
+            const new_id = `reactflow__edge-${source}${sourceHandle}-${target}${targetHandle}`;
+            const changes = [{ id: new_id, type: "remove" }];
             edges.forEach(_edge => {
-                if ((_edge.source === source && _edge.sourceHandle === sourceHandle) ^
-                    (_edge.target === target)) {
+                if (edge.id === _edge.id) {
                     changes.push({ id: _edge.id, type: "remove" });
                 }
             });
-            reactFlowInstance.setEdges((edges) => applyNodeChanges(changes, edges));
+
+            if (edge.source.includes("s")) {
+                edge.type = edge.sourceHandle.replace("source_", "Sensor");
+
+                const setSingleEdgeData = useSensorStore.getState().setSingleEdgeData;;
+                setSingleEdgeData(edge);
+            }
+
+            reactFlowInstance.setEdges((edges) => applyEdgeChanges(changes, edges));
+            reactFlowInstance.addEdges(edge);
 
             const nodes = reactFlowInstance.getNodes();
             edges = reactFlowInstance.getEdges();
@@ -461,6 +484,8 @@ function NodeEditor_({ nodes, edges, ...props }) {
             <ReactFlow
                 style={reactFlowStyle}
                 nodeTypes={nodeTypes}
+                edgeTypes={edgeTypes}
+                connectionLineComponent={ConnectionLine}
                 defaultNodes={nodes}
                 defaultEdges={edges}
                 onInit={onInit}
@@ -480,19 +505,10 @@ function NodeEditor_({ nodes, edges, ...props }) {
 const elk = new Elk({
     defaultLayoutOptions: {
         'elk.algorithm': 'layered',
-
         "elk.direction": 'DOWN',
         "elk.spacing.nodeNode": "75",
-        "elk.edgeRouting": "ORTHOGONAL",
-
-        // "elk.layered.nodePlacement.strategy": "NodePlacementStrategy.NETWORK_SIMPLEX",
-        // "elk.layered.nodePlacement.bk.edgeStraightening": "EdgeStraighteningStrategy.NONE",
-        // "elk.layered.considerModelOrder.strategy": "OrderingStrategy.NODES_AND_EDGES",
-        // "elk.layered.considerModelOrder.components": "ComponentOrderingStrategy.FORCE_MODEL_ORDER"
-
         "elk.layered.spacing.nodeNodeBetweenLayers": "75",
         "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
-
         "portConstraints": "FIXED_ORDER",
     },
 });
@@ -502,6 +518,7 @@ const createGraphLayout = async (nodes: [], edges: []) => {
     const elkEdges = [];
 
     nodes.forEach((flowNode) => {
+        if (flowNode?.type === "Sensor") return;
         elkNodes.push({
             id: flowNode.id,
             width: flowNode.width,
@@ -509,6 +526,7 @@ const createGraphLayout = async (nodes: [], edges: []) => {
         });
     });
     edges.forEach((flowEdge) => {
+        if (flowEdge?.type?.includes("Sensor")) return;
         elkEdges.push({
             id: flowEdge.id,
             target: flowEdge.target,
@@ -531,6 +549,7 @@ const createGraphLayout = async (nodes: [], edges: []) => {
     });
 
     return nodes.map((flowNode) => {
+        if (flowNode?.type === "Sensor") return flowNode;
         flowNode.position = {
             x: positions[flowNode.id].x,
             y: positions[flowNode.id].y,
@@ -602,6 +621,31 @@ function getNodesEdgesFromTree(tree) {
 
     dfs(tree);
 
+    const sensorNodes = ["s0"];
+    for (const node_id of sensorNodes) {
+        nodes.push({
+            id: node_id,
+            data: {
+                label: node_id,
+            },
+            position: { x: 0, y: 0 },
+            type: "Sensor",
+            dragHandle: ".module-node-drag-handle",
+        });
+    }
+
+    const sensorEdgeData = useSensorStore.getState().edgeData;
+    for (const [edge_id, edge] of Object.entries(sensorEdgeData)) {
+        edges.push({
+            id: edge_id,
+            source: edge.source,
+            sourceHandle: edge.sourceHandle,
+            target: edge.target,
+            targetHandle: edge.targetHandle,
+            type: edge.type,
+        });
+    }
+
     return [nodes, edges];
 }
 
@@ -617,7 +661,7 @@ function getTreeFromNodesEdges(nodes, edges) {
     }
 
     const fillChildren = (node) => {
-        for (const child_id of successors[node.id] || []) {
+        for (const child_id of successors[node?.id] || []) {
             const child_node = id_to_node[child_id];
             const edge_id = `E_${node.id}-${child_id}`;
             child_node.face = edge_to_face[edge_id];
@@ -629,6 +673,8 @@ function getTreeFromNodesEdges(nodes, edges) {
 
     const id_to_node = {};
     for (const node of nodes) {
+        if (node.id.includes("s")) continue;
+
         id_to_node[node.id] = getNode(node);
     }
 
@@ -636,6 +682,8 @@ function getTreeFromNodesEdges(nodes, edges) {
     const predecessors = {};
     const successors = {};
     for (const edge of edges) {
+        if (edge.source.includes("s")) continue;
+
         const edge_id = `E_${edge.source}-${edge.target}`;
         edge_to_face[edge_id] = Number(edge.sourceHandle.replace("source_", ""));
 
@@ -753,19 +801,14 @@ function getInitNodeDataFromTree(tree) {
 }
 
 export function NodeEditor(props) {
-    // console.log('node editor');
-    const tree = useTreeStore(state => state.treeData);
     const [nodes, edges] = useMemo(() => {
-        return getNodesEdgesFromTree(tree);
-        // return getLayoutedElements(nodes, edges);
-    }, [tree]);
-
-    const setNodeData = useNodeStore(state => state.setNodeData);
-
-    useEffect(() => {
+        const tree = useTreeStore.getState().treeData;
         const initNodeData = getInitNodeDataFromTree(tree);
+        const setNodeData = useNodeStore.getState().setNodeData;
+
         setNodeData(initNodeData);
-    }, [tree]);
+        return getNodesEdgesFromTree(tree);
+    }, []);
 
     // useRandomPose(nodes);
 

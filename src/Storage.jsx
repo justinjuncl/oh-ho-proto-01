@@ -4,6 +4,19 @@ import { persist, devtools } from "zustand/middleware";
 
 import exampleData from "assets/exampleData.json";
 
+const exampleSensorData = {
+    nodeData: {},
+    edgeData: {
+        "E_s0-0": {
+            source: "s0",
+            sourceHandle: "source_0",
+            target: "0",
+            targetHandle: "target_value",
+            type: "Sensor0"
+        }
+    },
+}
+
 // https://www.30secondsofcode.org/react/s/use-local-storage
 export const useLocalStorage = (key, defaultValue) => {
     const [storedValue, setStoredValue] = useState(() => {
@@ -34,11 +47,7 @@ export const useLocalStorage = (key, defaultValue) => {
 export const useStore = create(devtools(set => ({
     selection: {},
     setSelection: (selection) => set({ selection }),
-
-    shouldRenderFlag: true,
-    shouldRender: (shouldRenderFlag = true) => set({ shouldRenderFlag })
 })));
-
 
 export const useTreeStore = create(devtools(persist(
     (set, get) => ({
@@ -55,7 +64,6 @@ export const useColorStore = create(devtools(persist(
     }),
     { name: "colorData" }
 )));
-
 
 export const useNodeStore = create(devtools(persist(
     (set, get) => ({
@@ -83,6 +91,62 @@ export const useNodeStore = create(devtools(persist(
         }
     }),
     { name: "nodeData" }
+)));
+
+export const useSensorStore = create(devtools(persist(
+    (set, get) => ({
+        nodeData: exampleSensorData.nodeData,
+        setNodeData: (nodes) => {
+            set(state => ({
+                nodeData: {
+                    ...state.nodeData,
+                    ...nodes
+                }
+            }));
+        },
+        setSingleNodeData: (node) => {
+            set(state => ({
+                nodeData: {
+                    ...state.nodeData,
+                    [node.id]: { value: node.value }
+                }
+            }));
+        },
+        removeNodeData: (id) => {
+            set(state => ({
+                nodeData: (({ [id]: _, ...o }) => o)(state.nodeData)
+            }));
+        },
+        edgeData: exampleSensorData.edgeData,
+        setEdgeData: (edges) => {
+            set(state => ({
+                edgeData: {
+                    ...state.edgeData,
+                    ...edges
+                }
+            }));
+        },
+        setSingleEdgeData: (edge) => {
+            set(state => ({
+                edgeData: {
+                    ...state.edgeData,
+                    [edge.id]: {
+                        source: edge.source,
+                        sourceHandle: edge.sourceHandle,
+                        target: edge.target,
+                        targetHandle: edge.targetHandle,
+                        type: edge.type
+                    }
+                }
+            }));
+        },
+        removeEdgeData: (id) => {
+            set(state => ({
+                edgeData: (({ [id]: _, ...o }) => o)(state.edgeData)
+            }));
+        }
+    }),
+    { name: "sensorData" }
 )));
 
 export function download(data, filename, type) {
