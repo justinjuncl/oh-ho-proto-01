@@ -5,7 +5,13 @@ import { persist, devtools } from "zustand/middleware";
 import exampleData from "assets/exampleData.json";
 
 const exampleSensorData = {
-    nodes: {},
+    nodes: {
+        "s0": {
+            source_0: true,
+            source_1: false,
+            source_2: false,
+        }
+    },
     edges: {
         "E_s0-0": {
             source: "s0",
@@ -90,7 +96,7 @@ export const useNodeStore = create(devtools(persist(
             }));
         }
     }),
-    { name: "node" }
+    { name: "nodes" }
 )));
 
 export const useSensorStore = create(devtools(persist(
@@ -108,7 +114,11 @@ export const useSensorStore = create(devtools(persist(
             set(state => ({
                 nodes: {
                     ...state.nodes,
-                    [node.id]: { value: node.value }
+                    [node.id]: {
+                        source_0: node.source_0,
+                        source_1: node.source_1,
+                        source_2: node.source_2
+                    }
                 }
             }));
         },
@@ -117,6 +127,7 @@ export const useSensorStore = create(devtools(persist(
                 nodes: (({ [id]: _, ...o }) => o)(state.nodes)
             }));
         },
+
         edges: exampleSensorData.edges,
         setEdges: (edges) => {
             set(state => ({
