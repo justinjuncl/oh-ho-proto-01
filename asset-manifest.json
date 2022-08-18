@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/oh-ho-proto-01/static/css/main.7c0873f1.css",
-    "main.js": "/oh-ho-proto-01/static/js/main.b5000396.js",
+    "main.js": "/oh-ho-proto-01/static/js/main.aa6fa6f6.js",
     "static/js/787.0966b14f.chunk.js": "/oh-ho-proto-01/static/js/787.0966b14f.chunk.js",
     "static/media/ball.gltf": "/oh-ho-proto-01/static/media/ball.49845775b438e2b305c9.gltf",
     "static/media/forest.hdr": "/oh-ho-proto-01/static/media/forest.f438765a21d0a5ebe539.hdr",
@@ -11,11 +11,11 @@
     "static/media/moduleK.gltf": "/oh-ho-proto-01/static/media/moduleK.94a98453d5320defee64.gltf",
     "index.html": "/oh-ho-proto-01/index.html",
     "main.7c0873f1.css.map": "/oh-ho-proto-01/static/css/main.7c0873f1.css.map",
-    "main.b5000396.js.map": "/oh-ho-proto-01/static/js/main.b5000396.js.map",
+    "main.aa6fa6f6.js.map": "/oh-ho-proto-01/static/js/main.aa6fa6f6.js.map",
     "787.0966b14f.chunk.js.map": "/oh-ho-proto-01/static/js/787.0966b14f.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.7c0873f1.css",
-    "static/js/main.b5000396.js"
+    "static/js/main.aa6fa6f6.js"
   ]
 }
