@@ -30,15 +30,16 @@ const getId = (nodes) => {
 
 const getNodeSize = (type) => {
     const renderer = document.getElementsByClassName("react-flow__renderer")[0];
+    const style = getComputedStyle(renderer);
     if (type === "Sensor") {
         return {
-            width: parseInt(getComputedStyle(renderer).getPropertyValue("--sensor-node-width")),
-            height: parseInt(getComputedStyle(renderer).getPropertyValue("--sensor-node-height"))
+            width: parseInt(style.getPropertyValue("--sensor-node-width")),
+            height: parseInt(style.getPropertyValue("--sensor-node-height"))
         }
     } else {
         return {
-            width: parseInt(getComputedStyle(renderer).getPropertyValue("--default-node-width")),
-            height: parseInt(getComputedStyle(renderer).getPropertyValue("--default-node-height"))
+            width: parseInt(style.getPropertyValue("--default-node-width")),
+            height: parseInt(style.getPropertyValue("--default-node-height"))
         }
     }
 }
@@ -72,33 +73,43 @@ function SensorEdge(sensor_id) {
 }
 
 function SensorNode({ data }) {
+    const id = data.label;
+    const defaultChecked = useSensorStore.getState().nodes[id];
+
     const isValidConnection = useCallback((connection) => (
         connection.targetHandle === "target_value"
     ), []);
 
     const onChange = useCallback((e) => {
-        console.log(e.target.name, e.target.checked);
-    }, []);
+        const setNode = useSensorStore.getState().setNode;
+        const node = useSensorStore.getState().nodes[id];
+
+        setNode({
+            ...node,
+            id,
+            [e.target.name]: e.target.checked
+        });
+    }, [id]);
 
     return (
         <div className="module-node-wrapper">
             <div className="module-node sensor">
                 <div className="module-node-inner">
-                    <h1 className="module-node-drag-handle">{data.label}</h1>
+                    <h1 className="module-node-drag-handle">{id}</h1>
                     <div className="handles">
                         <div className="values">
                             <Handle type="source" position={Position.Right} isValidConnection={isValidConnection} id="source_0" />
-                            <input type="checkbox" name="source_0" onChange={onChange}></input>
+                            <input type="checkbox" name="source_0" onChange={onChange} defaultChecked={defaultChecked["source_0"]}></input>
                             <label className="label-value-text">Source 0</label>
                         </div>
                         <div className="values">
                             <Handle type="source" position={Position.Right} isValidConnection={isValidConnection} id="source_1" />
-                            <input type="checkbox" name="source_1" onChange={onChange}></input>
+                            <input type="checkbox" name="source_1" onChange={onChange} defaultChecked={defaultChecked["source_1"]}></input>
                             <label className="label-value-text">Source 1</label>
                         </div>
                         <div className="values">
                             <Handle type="source" position={Position.Right} isValidConnection={isValidConnection} id="source_2" />
-                            <input type="checkbox" name="source_2" onChange={onChange}></input>
+                            <input type="checkbox" name="source_2" onChange={onChange} defaultChecked={defaultChecked["source_2"]}></input>
                             <label className="label-value-text">Source 2</label>
                         </div>
                     </div>
@@ -113,13 +124,12 @@ function SensorNode({ data }) {
 function BaseModuleNode({ data }) {
     const setNode = useNodeStore(state => state.setNode);
     const setTree = useTreeStore(state => state.setTree);
-    const reactFlowInstance = useReactFlow();
 
     const id = data.label.replace("Module_", "");
     const name = data.moduleType + data.label.replace("Module_", "");
     const moduleType = data.moduleType;
-    // const defaultValue = useNodeStore.getState().nodes[id].value;
     const defaultValue = data.value;
+    const tangleRef = useRef();
 
     const onChange = useCallback(
         (value) => {
@@ -131,20 +141,12 @@ function BaseModuleNode({ data }) {
 
     const onBlur = useCallback(
         (value) => {
-            const nodes = reactFlowInstance.getNodes().map((node) => {
-                if (node.id === id) {
-                    return {
-                        ...node,
-                        data: { ...node.data, value }
-                    };
-                }
-                return node;
-            });
-            const edges = reactFlowInstance.getEdges();
-            const tree = getTreeFromNodesEdges(nodes, edges);
+            const tree = coerceTree(useTreeStore.getState().tree, (id) =>
+                useNodeStore.getState().nodes[id].value
+            );
             setTree(tree);
         },
-        [id, reactFlowInstance, setTree],
+        [setTree],
     );
 
     const [dragTarget, setDragTarget] = useState(null);
@@ -179,6 +181,7 @@ function BaseModuleNode({ data }) {
                         <Handle type="target" position={Position.Left} id="target_value" />
                         <label className="label-value-text">value</label>
                         <TangleText
+                            ref={tangleRef}
                             className="label-value"
                             value={defaultValue}
                             step={0.01} min={0} max={1} decimals={2}
@@ -328,12 +331,12 @@ function NodeEditor_({ nodes, edges, ...props }) {
                 type: "select",
                 selected: true
             });
-            // console.log(getDescendantsFromNode(id, nodes, edges));
         }
         setLastSelection(id);
         reactFlowInstance.setNodes((nodes) => applyNodeChanges(changes, nodes));
     }, [reactFlowInstance, selection?.object?.name]);
 
+    useSensorPose();
 
     const onNodesChange = useCallback(
         (changes) => {
@@ -416,35 +419,34 @@ function NodeEditor_({ nodes, edges, ...props }) {
         (event) => {
             event.preventDefault();
 
-            const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
             const type = event.dataTransfer.getData("application/reactflow");
-
             const targetNode = event.target?.closest(".react-flow__node");
 
             if (targetNode) {
                 // Replace existing node's moduleType
-                const targetId = targetNode.getAttribute("data-id");
                 const targetType = targetNode.className.match(/react-flow__node-(\w)/)[1];
                 if (type === targetType || type === "Sensor")
                     return
 
-                const nodes = reactFlowInstance.getNodes().map((node) => {
-                    if (node.id === targetId) {
-                        return {
-                            ...node,
-                            type,
-                            data: { ...node.data, moduleType: type }
-                        };
-                    }
-                    return node;
-                });
-                const edges = reactFlowInstance.getEdges();
-                const tree = getTreeFromNodesEdges(nodes, edges);
-                setTree(tree);
+                const targetId = targetNode.getAttribute("data-id");
+
+                reactFlowInstance.setNodes(nodes => (
+                    nodes.map(node => {
+                        if (node.id === targetId) {
+                            return {
+                                ...node,
+                                type,
+                                data: { ...node.data, moduleType: type }
+                            };
+                        }
+                        return node;
+                    })
+                ));
             } else {
                 // Add new node
                 let newNode;
                 const zoom = reactFlowInstance.getViewport().zoom;
+                const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
                 const nodeSize = getNodeSize(type);
                 const position = reactFlowInstance.project({
                     x: event.clientX - reactFlowBounds.left - (nodeSize.width / 2) * zoom,
@@ -452,14 +454,14 @@ function NodeEditor_({ nodes, edges, ...props }) {
                 });
 
                 if (type === "Sensor") {
-                    const nodes = useSensorStore.getState().nodes;
+                    const sensorNodes = useSensorStore.getState().nodes;
                     const getIdSensor = (nodes) => {
                         const _nodes = Object.keys(nodes).map(node_id => Number(node_id.replace("s", "")));
                         const id = Math.max(..._nodes) + 1;
                         return `s${id}`;
                     }
                     const setSensorNode = useSensorStore.getState().setNode;
-                    const new_id = getIdSensor(nodes);
+                    const new_id = getIdSensor(sensorNodes);
 
                     newNode = {
                         id: new_id,
@@ -494,8 +496,13 @@ function NodeEditor_({ nodes, edges, ...props }) {
 
                 reactFlowInstance.addNodes(newNode);
             }
+
+            const nodes = reactFlowInstance.getNodes();
+            const edges = reactFlowInstance.getEdges();
+            const tree = getTreeFromNodesEdges(nodes, edges);
+            setTree(tree);
         },
-        [reactFlowInstance, setTree]
+        [reactFlowInstance, setNode, setTree]
     );
 
     const onDragOver = useCallback((event) => {
@@ -714,7 +721,7 @@ function getTreeFromNodesEdges(nodes, edges) {
 
     const id_to_node = {};
     for (const node of nodes) {
-        if (node.id.includes("s")) continue;
+        if (node?.type === "Sensor") continue;
 
         id_to_node[node.id] = getNode(node);
     }
@@ -723,7 +730,7 @@ function getTreeFromNodesEdges(nodes, edges) {
     const predecessors = {};
     const successors = {};
     for (const edge of edges) {
-        if (edge.source.includes("s")) continue;
+        if (edge?.type?.includes("Sensor")) continue;
 
         const edge_id = `E_${edge.source}-${edge.target}`;
         edge_to_face[edge_id] = Number(edge.sourceHandle.replace("source_", ""));
@@ -775,15 +782,26 @@ function useInterval(callback, delay) {
 }
 
 const randomlySelectNode = (n, nodes, getValue) => {
-    let res = {};
+    const res = {};
     for (let i = 0; i < n; i++) {
         let node = nodes[Math.floor(Math.random() * (nodes.length))];
-        while (res.hasOwnProperty(node.id)) {
+        while (res.hasOwnProperty(node.id) || node.type === "Sensor") {
             node = nodes[Math.floor(Math.random() * (nodes.length - 1))];
         }
-        const value = Math.min(Math.max(0, getValue(node.id)), 1);
-        res[node.id] = { value };
+        res[node.id] = {
+            value: Math.min(1, Math.max(0, getValue(node.id)))
+        };
     }
+    return res;
+}
+
+const selectNodes = (nodes, getValue) => {
+    const res = {};
+    nodes.forEach(node => {
+        res[node.id] = {
+            value: Math.min(1, Math.max(0, getValue(node.id)))
+        };
+    })
     return res;
 }
 
@@ -806,9 +824,60 @@ export function coerceTree(node, getValue) {
     return newNode;
 }
 
-function useRandomPose(nodes) {
+function useSensorPose() {
+    const reactFlowInstance = useReactFlow();
+    const nodes = reactFlowInstance.getNodes();
+    const edges = reactFlowInstance.getEdges();
+
+    const sensorEdges = useSensorStore(state => state.edges);
+
     const setNodes = useNodeStore(state => state.setNodes);
     const setTree = useTreeStore(state => state.setTree);
+
+    useInterval(() => {
+        Object.values(sensorEdges).forEach(edge => {
+            const sensorNode = edge.source;
+            const sensorSource = edge.sourceHandle;
+            let isActive = useSensorStore.getState().nodes[sensorNode][sensorSource];
+            if (isActive) {
+                const node_id = edge.target;
+                const descendants = getDescendantsFromNode(node_id, nodes, edges);
+
+                let selectedNodes = selectNodes(descendants, (id) =>
+                    useNodeStore.getState().nodes[id].value + 0.1 * (Math.random() - 0.5)
+                );
+                setNodes(selectedNodes);
+
+                reactFlowInstance.setNodes(nodes => (
+                    nodes.map(node => {
+                        if (selectedNodes.hasOwnProperty(node.id)) {
+                            node.data = {
+                                ...node.data,
+                                value: selectedNodes[node.id].value
+                            };
+                        }
+
+                        return node;
+                    })
+                ));
+
+                const tree = coerceTree(useTreeStore.getState().tree, (id) =>
+                    useNodeStore.getState().nodes[id].value
+                );
+                setTree(tree);
+
+                invalidate();
+            }
+        });
+
+    }, 5000);
+}
+
+function useRandomPose(nodes, edges) {
+    const setNodes = useNodeStore(state => state.setNodes);
+    const setTree = useTreeStore(state => state.setTree);
+
+    const sensorEdges = useSensorStore.getState().edges;
 
     useInterval(() => {
         let n = Math.max(3, Math.floor(Math.random() * nodes.length));
@@ -818,7 +887,7 @@ function useRandomPose(nodes) {
         setNodes(selectedNodes);
 
         const tree = coerceTree(useTreeStore.getState().tree, (id) =>
-            useNodeStore.getState().node[id].value
+            useNodeStore.getState().nodes[id].value
         );
         setTree(tree);
 
@@ -844,14 +913,13 @@ function getInitNodesFromTree(tree) {
 export function NodeEditor(props) {
     const [nodes, edges] = useMemo(() => {
         const tree = useTreeStore.getState().tree;
-        const initNodes = getInitNodesFromTree(tree);
         const setNodes = useNodeStore.getState().setNodes;
 
+        const initNodes = getInitNodesFromTree(tree);
         setNodes(initNodes);
+
         return getNodesEdgesFromTree(tree);
     }, []);
-
-    // useRandomPose(nodes);
 
     return (
         <ReactFlowProvider>

@@ -29,15 +29,15 @@ const getModule = {
 }
 
 function useOffsetFromParent(parentModuleType, face) {
-    const gltfFileNameParent = getGltfFileName[parentModuleType];
-    const { nodes: parentNodes } = useGLTF(gltfFileNameParent);
+    const parentGltfFileName = getGltfFileName[parentModuleType];
+    const { nodes: parentNodes } = useGLTF(parentGltfFileName);
 
     const offset = useMemo(() => {
-        for (const [key, val] of Object.entries(parentNodes)) {
-            if (key === `f_${face}`) {
-                return { position: val.position, rotation: val.rotation };
-            }
-        }
+        const offsetObject = parentNodes[`f_${face}`];
+        return {
+            position: offsetObject.position,
+            rotation: offsetObject.rotation
+        };
     }, [parentNodes, face]);
 
     return offset;
@@ -106,10 +106,12 @@ function useColor(moduleType) {
     const highlightColor = color[moduleType + "_highlight"];
 
     const rnd = useMemo(() => Math.random() * 0.8 + 0.2, []);
-    const baseColor = useMemo(() => lerpColor(startColor, endColor, rnd),
+    const baseColor = useMemo(() =>
+        lerpColor(startColor, endColor, rnd),
         [startColor, endColor, rnd]
     );
-    const selectedColor = useMemo(() => lerpColor(baseColor, highlightColor, 0.8),
+    const selectedColor = useMemo(() =>
+        lerpColor(baseColor, highlightColor, 0.8),
         [baseColor, highlightColor]
     );
 
@@ -236,7 +238,6 @@ function MeshT(props) {
 }
 
 function ModuleK({ moduleType, face, id, parentModuleType, ...props }) {
-    // console.log(moduleType, id);
     const groupRef = useRef();
 
     const name = "Module_" + id;
@@ -260,7 +261,6 @@ function ModuleK({ moduleType, face, id, parentModuleType, ...props }) {
 }
 
 function BaseModule({ moduleType, face, id, parentModuleType, ...props }) {
-    // console.log(moduleType, id);
     const groupRef = useAnimations(moduleType, id, () =>
         useNodeStore.getState().nodes[id].value * 0.99999
     );
