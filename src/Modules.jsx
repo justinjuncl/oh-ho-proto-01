@@ -144,21 +144,18 @@ function useAnimatedMaterialColor(moduleType, getIsSelected) {
 
 function useOnGroupClick(ref) {
     const setSelection = useStore(state => state.setSelection);
-    const onClick = useCallback(
-        (e) => {
-            e.stopPropagation();
-            const isSelected = useStore.getState().selection?.object?.name === ref.current.name;
-            if (!isSelected) {
-                setSelection({
-                    object: ref.current,
-                });
-            } else {
-                setSelection({});
-            }
-            invalidate();
-        },
-        [setSelection, ref]
-    );
+    const onClick = useCallback((e) => {
+        e.stopPropagation();
+        const isSelected = useStore.getState().selection?.object?.name === ref.current.name;
+        if (!isSelected) {
+            setSelection({
+                object: ref.current,
+            });
+        } else {
+            setSelection({});
+        }
+        invalidate();
+    }, [setSelection, ref]);
 
     return onClick;
 }

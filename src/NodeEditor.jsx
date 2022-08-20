@@ -131,23 +131,17 @@ function BaseModuleNode({ data }) {
     const defaultValue = data.value;
     const tangleRef = useRef();
 
-    const onChange = useCallback(
-        (value) => {
-            setNode({ id, value, moduleType });
-            invalidate();
-        },
-        [moduleType, id, setNode]
-    );
+    const onChange = useCallback((value) => {
+        setNode({ id, value, moduleType });
+        invalidate();
+    }, [moduleType, id, setNode]);
 
-    const onBlur = useCallback(
-        (value) => {
-            const tree = coerceTree(useTreeStore.getState().tree, (id) =>
-                useNodeStore.getState().nodes[id].value
-            );
-            setTree(tree);
-        },
-        [setTree],
-    );
+    const onBlur = useCallback((value) => {
+        const tree = coerceTree(useTreeStore.getState().tree, (id) =>
+            useNodeStore.getState().nodes[id].value
+        );
+        setTree(tree);
+    }, [setTree]);
 
     const [dragTarget, setDragTarget] = useState(null);
     const [dragHover, setDragHover] = useState(false);
@@ -338,191 +332,177 @@ function NodeEditor_({ nodes, edges, ...props }) {
 
     useSensorPose();
 
-    const onNodesChange = useCallback(
-        (changes) => {
-            let selected = false;
-            for (const change of changes) {
-                if (change.type === "select") {
-                    if (change.selected) {
-                        setSelection({
-                            object: {
-                                name: "Module_" + change.id,
-                            },
-                        });
-                        setLastSelection(change.id);
-                        selected = true;
-                    } else if (!selected) {
-                        setSelection({});
-                        setLastSelection("");
+    const onNodesChange = useCallback((changes) => {
+        let selected = false;
+        for (const change of changes) {
+            if (change.type === "select") {
+                if (change.selected) {
+                    setSelection({
+                        object: {
+                            name: "Module_" + change.id,
+                        },
+                    });
+                    setLastSelection(change.id);
+                    selected = true;
+                } else if (!selected) {
+                    setSelection({});
+                    setLastSelection("");
+                }
+            } else if (change.type === "remove" && change.id.includes("s")) {
+                useSensorStore.getState().removeNode(change.id);
+            }
+        }
+        invalidate();
+    }, [setSelection]);
+
+    const onEdgesChange = useCallback((changes) => {
+        if (changes[0]?.type === "select") return;
+        for (const change of changes) {
+            if (change.type === "remove" && change.id.includes("E_s")) {
+                useSensorStore.getState().removeEdge(change.id);
+            }
+        }
+        const nodes = reactFlowInstance.getNodes();
+        const edges = reactFlowInstance.getEdges();
+        const tree = getTreeFromNodesEdges(nodes, edges);
+        setTree(tree);
+    }, [reactFlowInstance, setTree]);
+
+    const onConnect = useCallback((edge) => {
+        const source = edge.source;
+        const sourceHandle = edge.sourceHandle;
+        const target = edge.target;
+        const targetHandle = edge.targetHandle;
+        let edges = reactFlowInstance.getEdges();
+
+        edge.id = `E_${edge.source}-${edge.target}`;
+        const new_id = `reactflow__edge-${source}${sourceHandle}-${target}${targetHandle}`;
+        const changes = [{ id: new_id, type: "remove" }];
+        edges.forEach(_edge => {
+            if (edge.id === _edge.id) {
+                changes.push({ id: _edge.id, type: "remove" });
+            }
+        });
+
+        if (edge.source.includes("s")) {
+            edge.type = edge.sourceHandle.replace("source_", "Sensor");
+
+            const setEdge = useSensorStore.getState().setEdge;
+            setEdge(edge);
+        }
+
+        reactFlowInstance.setEdges((edges) => applyEdgeChanges(changes, edges));
+        reactFlowInstance.addEdges(edge);
+
+        const nodes = reactFlowInstance.getNodes();
+        edges = reactFlowInstance.getEdges();
+        const tree = getTreeFromNodesEdges(nodes, edges);
+        setTree(tree);
+    }, [reactFlowInstance, setTree]);
+
+    const onDrop = useCallback((event) => {
+        event.preventDefault();
+
+        const type = event.dataTransfer.getData("application/reactflow");
+        const targetNode = event.target?.closest(".react-flow__node");
+
+        if (targetNode) {
+            // Replace existing node's moduleType
+            const targetType = targetNode.className.match(/react-flow__node-(\w)/)[1];
+            if (type === targetType || type === "Sensor")
+                return
+
+            const targetId = targetNode.getAttribute("data-id");
+
+            reactFlowInstance.setNodes(nodes => (
+                nodes.map(node => {
+                    if (node.id === targetId) {
+                        return {
+                            ...node,
+                            type,
+                            data: { ...node.data, moduleType: type }
+                        };
                     }
-                } else if (change.type === "remove" && change.id.includes("s")) {
-                    useSensorStore.getState().removeNode(change.id);
-                }
-            }
-            invalidate();
-        },
-        [setSelection]
-    );
-
-    const onEdgesChange = useCallback(
-        (changes) => {
-            if (changes[0]?.type === "select") return;
-            for (const change of changes) {
-                if (change.type === "remove" && change.id.includes("E_s")) {
-                    useSensorStore.getState().removeEdge(change.id);
-                }
-            }
-            const nodes = reactFlowInstance.getNodes();
-            const edges = reactFlowInstance.getEdges();
-            const tree = getTreeFromNodesEdges(nodes, edges);
-            setTree(tree);
-        },
-        [reactFlowInstance, setTree]
-    );
-
-    const onConnect = useCallback(
-        (edge) => {
-            const source = edge.source;
-            const sourceHandle = edge.sourceHandle;
-            const target = edge.target;
-            const targetHandle = edge.targetHandle;
-            let edges = reactFlowInstance.getEdges();
-
-            edge.id = `E_${edge.source}-${edge.target}`;
-            const new_id = `reactflow__edge-${source}${sourceHandle}-${target}${targetHandle}`;
-            const changes = [{ id: new_id, type: "remove" }];
-            edges.forEach(_edge => {
-                if (edge.id === _edge.id) {
-                    changes.push({ id: _edge.id, type: "remove" });
-                }
+                    return node;
+                })
+            ));
+        } else {
+            // Add new node
+            let newNode;
+            const zoom = reactFlowInstance.getViewport().zoom;
+            const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+            const nodeSize = getNodeSize(type);
+            const position = reactFlowInstance.project({
+                x: event.clientX - reactFlowBounds.left - (nodeSize.width / 2) * zoom,
+                y: event.clientY - reactFlowBounds.top - (nodeSize.height / 2) * zoom,
             });
 
-            if (edge.source.includes("s")) {
-                edge.type = edge.sourceHandle.replace("source_", "Sensor");
-
-                const setEdge = useSensorStore.getState().setEdge;
-                setEdge(edge);
-            }
-
-            reactFlowInstance.setEdges((edges) => applyEdgeChanges(changes, edges));
-            reactFlowInstance.addEdges(edge);
-
-            const nodes = reactFlowInstance.getNodes();
-            edges = reactFlowInstance.getEdges();
-            const tree = getTreeFromNodesEdges(nodes, edges);
-            setTree(tree);
-        },
-        [reactFlowInstance, setTree]
-    );
-
-    const onDrop = useCallback(
-        (event) => {
-            event.preventDefault();
-
-            const type = event.dataTransfer.getData("application/reactflow");
-            const targetNode = event.target?.closest(".react-flow__node");
-
-            if (targetNode) {
-                // Replace existing node's moduleType
-                const targetType = targetNode.className.match(/react-flow__node-(\w)/)[1];
-                if (type === targetType || type === "Sensor")
-                    return
-
-                const targetId = targetNode.getAttribute("data-id");
-
-                reactFlowInstance.setNodes(nodes => (
-                    nodes.map(node => {
-                        if (node.id === targetId) {
-                            return {
-                                ...node,
-                                type,
-                                data: { ...node.data, moduleType: type }
-                            };
-                        }
-                        return node;
-                    })
-                ));
-            } else {
-                // Add new node
-                let newNode;
-                const zoom = reactFlowInstance.getViewport().zoom;
-                const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
-                const nodeSize = getNodeSize(type);
-                const position = reactFlowInstance.project({
-                    x: event.clientX - reactFlowBounds.left - (nodeSize.width / 2) * zoom,
-                    y: event.clientY - reactFlowBounds.top - (nodeSize.height / 2) * zoom,
-                });
-
-                if (type === "Sensor") {
-                    const sensorNodes = useSensorStore.getState().nodes;
-                    const getIdSensor = (nodes) => {
-                        const _nodes = Object.keys(nodes).map(node_id => Number(node_id.replace("s", "")));
-                        const id = Math.max(..._nodes) + 1;
-                        return `s${id}`;
-                    }
-                    const setSensorNode = useSensorStore.getState().setNode;
-                    const new_id = getIdSensor(sensorNodes);
-
-                    newNode = {
-                        id: new_id,
-                        data: {
-                            label: new_id,
-                            sensor_0: false,
-                            sensor_1: false,
-                            sensor_2: false,
-                        },
-                        position,
-                        type
-                    };
-
-                    setSensorNode(newNode);
-                } else {
-                    const nodes = reactFlowInstance.getNodes();
-                    const new_id = getId(nodes);
-
-                    newNode = {
-                        id: `${new_id}`,
-                        data: {
-                            label: `Module_${new_id}`,
-                            value: 0,
-                            moduleType: type
-                        },
-                        position,
-                        type,
-                    };
-
-                    setNode(newNode);
+            if (type === "Sensor") {
+                const sensorNodes = useSensorStore.getState().nodes;
+                const getIdSensor = (nodes) => {
+                    const _nodes = Object.keys(nodes).map(node_id => Number(node_id.replace("s", "")));
+                    const id = Math.max(..._nodes) + 1;
+                    return `s${id}`;
                 }
+                const setSensorNode = useSensorStore.getState().setNode;
+                const new_id = getIdSensor(sensorNodes);
 
-                reactFlowInstance.addNodes(newNode);
+                newNode = {
+                    id: new_id,
+                    data: {
+                        label: new_id,
+                        sensor_0: false,
+                        sensor_1: false,
+                        sensor_2: false,
+                    },
+                    position,
+                    type
+                };
+
+                setSensorNode(newNode);
+            } else {
+                const nodes = reactFlowInstance.getNodes();
+                const new_id = getId(nodes);
+
+                newNode = {
+                    id: `${new_id}`,
+                    data: {
+                        label: `Module_${new_id}`,
+                        value: 0,
+                        moduleType: type
+                    },
+                    position,
+                    type,
+                };
+
+                setNode(newNode);
             }
 
-            const nodes = reactFlowInstance.getNodes();
-            const edges = reactFlowInstance.getEdges();
-            const tree = getTreeFromNodesEdges(nodes, edges);
-            setTree(tree);
-        },
-        [reactFlowInstance, setNode, setTree]
-    );
+            reactFlowInstance.addNodes(newNode);
+        }
+
+        const nodes = reactFlowInstance.getNodes();
+        const edges = reactFlowInstance.getEdges();
+        const tree = getTreeFromNodesEdges(nodes, edges);
+        setTree(tree);
+    }, [reactFlowInstance, setNode, setTree]);
 
     const onDragOver = useCallback((event) => {
         event.preventDefault();
         event.dataTransfer.dropEffect = "move";
     }, []);
 
-    const onInit = useCallback(
-        (reactFlowInstance) => {
-            createGraphLayout(reactFlowInstance.getNodes(), reactFlowInstance.getEdges())
-                .then((nodes) => {
-                    reactFlowInstance.setNodes(nodes);
-                    const rootNode = reactFlowInstance.getNodes().find(node => node.id === "0");
-                    const x = rootNode.position.x + rootNode.width / 2;
-                    const y = rootNode.position.y + rootNode.height / 2;
-                    reactFlowInstance.setCenter(x, y, { zoom: 1, duration: 1500 });
-                })
-                .catch((err) => console.error(err));
-        }, []
-    );
+    const onInit = useCallback((reactFlowInstance) => {
+        createGraphLayout(reactFlowInstance.getNodes(), reactFlowInstance.getEdges())
+            .then((nodes) => {
+                reactFlowInstance.setNodes(nodes);
+                const rootNode = reactFlowInstance.getNodes().find(node => node.id === "0");
+                const x = rootNode.position.x + rootNode.width / 2;
+                const y = rootNode.position.y + rootNode.height / 2;
+                reactFlowInstance.setCenter(x, y, { zoom: 1, duration: 1500 });
+            })
+            .catch((err) => console.error(err));
+    }, []);
 
     return (
         <div className="reactflow-wrapper" ref={reactFlowWrapper}>

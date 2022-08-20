@@ -13,12 +13,10 @@ export function Panel(props) {
 const PanelTab = (props) => {
     const buttonRef = useRef(null);
 
-    const onClick = useCallback(
-        () => {
-            props.contentRefs[props.index].classList.toggle("hide");
-            buttonRef.current.classList.toggle("hide");
-        }, [props.contentRefs, props.index, buttonRef]
-    );
+    const onClick = useCallback(() => {
+        props.contentRefs[props.index].classList.toggle("hide");
+        buttonRef.current.classList.toggle("hide");
+    }, [props.contentRefs, props.index, buttonRef]);
 
     let divStyle = {
         zIndex: props.index,
