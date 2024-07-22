@@ -2,7 +2,7 @@
     "name": "oh-ho-proto-01",
     "version": "0.1.0",
     "private": true,
-    "homepage": "https://justinjuncl.github.io/oh-ho-proto-01",
+    "homepage": "https://justinjun.xyz/oh-ho",
     "dependencies": {
         "@react-spring/three": "^9.4.2",
         "@react-three/drei": "^8.8.3",
